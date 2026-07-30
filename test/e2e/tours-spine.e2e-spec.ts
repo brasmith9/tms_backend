@@ -31,9 +31,6 @@ describe('Tours booking spine (e2e)', () => {
   let touristToken: string;
   let operatorToken: string;
   let adminToken: string;
-  let tourId: string;
-  let departureId: string;
-  let reference: string;
 
   beforeAll(async () => {
     app = await bootstrapTestApp((builder) =>
@@ -57,27 +54,25 @@ describe('Tours booking spine (e2e)', () => {
     await app.close();
   });
 
-  it('runs search → book → pay → confirm → cancel → refund end to end', async () => {
-    // Admin creates a destination.
+  it('runs search → book → pay → confirm → cancel end to end', async () => {
     const dest = await request(server)
       .post('/api/v1/destinations')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Spine Coast', region: 'Central', description: 'x' })
       .expect(201);
 
-    // Operator creates a tour, submits it; admin approves.
     const tour = await request(server)
       .post('/api/v1/tours')
       .set('Authorization', `Bearer ${operatorToken}`)
       .send({
         title: 'Spine Canopy Walk',
-        destinationId: dest.body.id,
+        destinationId: dest.body.data.id,
         description: 'a walk',
         priceMinor: 12000,
         durationMinutes: 120,
       })
       .expect(201);
-    tourId = tour.body.id;
+    const tourId = tour.body.data.id as string;
 
     await request(server)
       .post(`/api/v1/tours/${tourId}/submit`)
@@ -88,38 +83,36 @@ describe('Tours booking spine (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(201);
 
-    // Public search now finds the approved tour.
+    // Public search now finds the approved tour under data.results.
     const search = await request(server)
       .get('/api/v1/tours?limit=50')
       .expect(200);
-    expect(search.body.data.some((t: { id: string }) => t.id === tourId)).toBe(
-      true,
-    );
+    expect(search.body.code).toBe(200);
+    expect(
+      search.body.data.results.some((t: { id: string }) => t.id === tourId),
+    ).toBe(true);
 
-    // Operator adds a departure far in the future (outside the cancel window).
     const departure = await request(server)
       .post(`/api/v1/tours/${tourId}/departures`)
       .set('Authorization', `Bearer ${operatorToken}`)
       .send({ departsAt: '2027-12-01T08:30:00.000Z', capacity: 10 })
       .expect(201);
-    departureId = departure.body.id;
+    const departureId = departure.body.data.id as string;
 
-    // Tourist books (PENDING).
     const booking = await request(server)
       .post('/api/v1/bookings')
       .set('Authorization', `Bearer ${touristToken}`)
       .send({ departureId, seats: 1 })
       .expect(201);
-    reference = booking.body.reference;
-    expect(booking.body.status).toBe('PENDING');
+    const reference = booking.body.data.reference as string;
+    expect(booking.body.data.status).toBe('PENDING');
 
-    // Initiate payment (fake Paystack) → authorization url returned.
     const initiate = await request(server)
       .post('/api/v1/payments/initiate')
       .set('Authorization', `Bearer ${touristToken}`)
       .send({ bookingReference: reference })
       .expect(201);
-    expect(initiate.body.authorizationUrl).toContain('paystack.com');
+    expect(initiate.body.data.authorizationUrl).toContain('paystack.com');
 
     // Paystack posts a signed charge.success → booking becomes CONFIRMED.
     const event = JSON.stringify({
@@ -140,18 +133,16 @@ describe('Tours booking spine (e2e)', () => {
       .get(`/api/v1/bookings/${reference}`)
       .set('Authorization', `Bearer ${touristToken}`)
       .expect(200);
-    expect(confirmed.body.status).toBe('CONFIRMED');
+    expect(confirmed.body.data.status).toBe('CONFIRMED');
 
-    // Tourist cancels (outside the 48h window) → CANCELLED.
     const cancelled = await request(server)
       .post(`/api/v1/bookings/${reference}/cancel`)
       .set('Authorization', `Bearer ${touristToken}`)
       .expect(201);
-    expect(cancelled.body.status).toBe('CANCELLED');
+    expect(cancelled.body.data.status).toBe('CANCELLED');
   });
 
-  it('returns the standard 409 envelope when a departure is fully booked', async () => {
-    // A capacity-1 departure, booked twice by the same tourist.
+  it('returns the uniform 409 envelope when a departure is fully booked', async () => {
     const dest = await request(server)
       .post('/api/v1/destinations')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -161,37 +152,37 @@ describe('Tours booking spine (e2e)', () => {
       .set('Authorization', `Bearer ${operatorToken}`)
       .send({
         title: 'Full Tour',
-        destinationId: dest.body.id,
+        destinationId: dest.body.data.id,
         description: 'x',
         priceMinor: 5000,
         durationMinutes: 60,
       });
     await request(server)
-      .post(`/api/v1/tours/${tour.body.id}/submit`)
+      .post(`/api/v1/tours/${tour.body.data.id}/submit`)
       .set('Authorization', `Bearer ${operatorToken}`);
     await request(server)
-      .post(`/api/v1/tours/${tour.body.id}/approve`)
+      .post(`/api/v1/tours/${tour.body.data.id}/approve`)
       .set('Authorization', `Bearer ${adminToken}`);
     const dep = await request(server)
-      .post(`/api/v1/tours/${tour.body.id}/departures`)
+      .post(`/api/v1/tours/${tour.body.data.id}/departures`)
       .set('Authorization', `Bearer ${operatorToken}`)
       .send({ departsAt: '2027-12-01T08:30:00.000Z', capacity: 1 });
 
     await request(server)
       .post('/api/v1/bookings')
       .set('Authorization', `Bearer ${touristToken}`)
-      .send({ departureId: dep.body.id, seats: 1 })
+      .send({ departureId: dep.body.data.id, seats: 1 })
       .expect(201);
 
     const over = await request(server)
       .post('/api/v1/bookings')
       .set('Authorization', `Bearer ${touristToken}`)
-      .send({ departureId: dep.body.id, seats: 1 })
+      .send({ departureId: dep.body.data.id, seats: 1 })
       .expect(409);
-    expect(over.body).toMatchObject({
-      statusCode: 409,
-      error: 'Conflict',
-      path: '/api/v1/bookings',
+    expect(over.body).toEqual({
+      code: 409,
+      message: 'Not enough seats remaining on this departure',
+      data: null,
     });
   });
 });
