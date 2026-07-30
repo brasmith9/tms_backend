@@ -11,6 +11,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ToursModule } from './modules/tours/tours.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { UsersModule } from './modules/users/users.module';
     PaymentsModule,
     ReviewsModule,
     NotificationsModule,
+    UploadsModule,
   ],
 })
 export class AppModule {}
