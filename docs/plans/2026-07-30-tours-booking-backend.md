@@ -2424,7 +2424,7 @@ describe('Booking concurrency (e2e)', () => {
 
 ```bash
 docker compose up -d db_test
-DATABASE_URL=postgres://voyago:voyago@localhost:5433/voyago_test yarn test:e2e bookings-concurrency
+DATABASE_URL=postgres://voyago:voyago@localhost:5545/voyago_test yarn test:e2e bookings-concurrency
 ```
 Expected: one 201, one 409. If both 201, the lock is not being taken — verify `lockAndGet` uses `pessimistic_write` and runs inside the same `manager`.
 
@@ -3038,7 +3038,7 @@ git add src/database/seeds && git commit -m "TOUR-014: Add idempotent seed data 
 
 ```bash
 docker compose up -d db_test
-DATABASE_URL=postgres://voyago:voyago@localhost:5433/voyago_test yarn test:e2e
+DATABASE_URL=postgres://voyago:voyago@localhost:5545/voyago_test yarn test:e2e
 ```
 Expected: all green, including `bookings-concurrency`.
 
@@ -3048,7 +3048,7 @@ Expected: all green, including `bookings-concurrency`.
 
 ```bash
 yarn lint && yarn test && \
-DATABASE_URL=postgres://voyago:voyago@localhost:5433/voyago_test yarn test:e2e
+DATABASE_URL=postgres://voyago:voyago@localhost:5545/voyago_test yarn test:e2e
 git add -A && git commit -m "TOUR-015: Add end-to-end spine test and finalise run docs"
 ```
 
