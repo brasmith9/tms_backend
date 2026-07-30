@@ -12,6 +12,7 @@ import {
   paginate,
 } from '../../common/pagination/paginate';
 import { DestinationsService } from '../destinations/destinations.service';
+import { CandidateTour } from './candidate-tour';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { TourQueryDto } from './dto/tour-query.dto';
@@ -87,6 +88,14 @@ export class ToursService {
     const tour = await this.byIdOrThrow(id);
     tour.status = TourStatus.SUSPENDED;
     return this.repo.save(tour);
+  }
+
+  /** Grounding for the itinerary planner: approved tours for a destination. */
+  findItineraryCandidates(
+    destination: string,
+    limit = 20,
+  ): Promise<CandidateTour[]> {
+    return this.repo.findApprovedByDestinationName(destination, limit);
   }
 
   /** Resolver for OwnershipGuard. */

@@ -31,6 +31,13 @@ export const configuration = () => ({
     apiKey: process.env.CLOUDINARY_API_KEY ?? '',
     apiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
   },
+  ai: {
+    apiKey: process.env.AI_OPENROUTE_API_KEY ?? '',
+    model: process.env.AI_OPENROUTE_MODEL ?? 'anthropic/claude-3.5-sonnet',
+    baseUrl:
+      process.env.AI_OPENROUTE_BASE_URL ?? 'https://openrouter.ai/api/v1',
+    timeoutMs: parseInt(process.env.AI_OPENROUTE_TIMEOUT_MS ?? '120000', 10),
+  },
   frontendResetUrl:
     process.env.FRONTEND_RESET_URL ?? 'http://localhost:5173/reset-password',
 });

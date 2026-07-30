@@ -20,8 +20,10 @@ this system — not invented places or prices.
    This is a plain SQL fetch + application-level validation — no vector store, which is
    unwarranted at this catalogue size (the same Postgres-native-over-heavier-infra stance the SRS
    adaptation takes elsewhere).
-3. **Synchronous request/response.** Generation blocks the HTTP call (~5–15s, 20s timeout). A job
-   queue with polling is deferred until latency or load makes it necessary.
+3. **Synchronous request/response.** Generation blocks the HTTP call. Latency is model-dependent
+   (a fast model returns in seconds; `openrouter/free` was measured at ~75s), so the client timeout
+   defaults high (120s) and is configurable, enforced via `AbortSignal`. A job queue with polling
+   is deferred until latency or load makes it necessary.
 4. **Graceful degradation.** When the API key is absent the planner throws 503 (like Cloudinary /
    Brevo), so the rest of the system boots and runs without AI configured. The key stays optional
    in env validation.

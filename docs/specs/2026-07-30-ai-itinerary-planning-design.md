@@ -106,7 +106,11 @@ Mirrors `paystack.client.ts` / `storage.service.ts`:
 
 - Reads a new `ai` config section: `apiKey` (`AI_OPENROUTE_API_KEY`), `model`
   (`AI_OPENROUTE_MODEL`, default `anthropic/claude-3.5-sonnet`), `baseUrl`
-  (`AI_OPENROUTE_BASE_URL`, default `https://openrouter.ai/api/v1`), `timeoutMs` (default 20000).
+  (`AI_OPENROUTE_BASE_URL`, default `https://openrouter.ai/api/v1`), `timeoutMs`
+  (`AI_OPENROUTE_TIMEOUT_MS`, default 120000 — high enough for slow free-tier models observed to
+  take ~75s; lower it when using a fast model). The deadline is enforced with
+  `AbortSignal.timeout(timeoutMs)` in addition to axios' own `timeout`, since a provider that holds
+  the connection open while queueing can otherwise defeat the latter.
 - POSTs to `/chat/completions` with `response_format: { type: 'json_object' }`, a system prompt
   describing the schema + grounding rules, and a user message carrying the request + candidate
   tours. Sends OpenRouter's recommended `HTTP-Referer` and `X-Title` headers.
@@ -136,8 +140,9 @@ The **service** owns retrieval, tourId validation, persistence — all pure and 
 
 ## Cross-cutting
 
-- **Synchronous** generation (request waits ~5–15s, 20s client timeout). Async/queue is a
-  documented Phase-2 deferral (see ADR).
+- **Synchronous** generation: the request blocks until the model responds. Latency is
+  model-dependent — a fast paid model returns in a few seconds; `openrouter/free` was measured at
+  ~75s. Async/queue is a documented Phase-2 deferral (see ADR).
 - Standard response envelope + `@ApiEnvelopeResponse` / `@ApiPaginatedResponse` Swagger + a
   `@ResponseMessage('Itinerary generated')` on the generate route.
 - TypeORM migration `Itineraries<ts>` adds the table; `migrationsRun` applies it on boot.

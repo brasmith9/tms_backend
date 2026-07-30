@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
+import { CandidateTour } from './candidate-tour';
 import { TourQueryDto } from './dto/tour-query.dto';
+import { Destination } from '../destinations/entities/destination.entity';
 import { Tour, TourStatus } from './entities/tour.entity';
 
 const SORTS: Record<string, { column: string; direction: 'ASC' | 'DESC' }> = {
@@ -69,5 +71,46 @@ export class ToursRepository {
   findOneApproved(id: string, manager?: EntityManager): Promise<Tour | null> {
     const r = manager ? manager.getRepository(Tour) : this.repo;
     return r.findOne({ where: { id, status: TourStatus.APPROVED } });
+  }
+
+  /** Approved tours whose destination name matches, as planner grounding. */
+  async findApprovedByDestinationName(
+    name: string,
+    limit: number,
+  ): Promise<CandidateTour[]> {
+    const rows = await this.repo
+      .createQueryBuilder('tour')
+      // tours.destination_id is varchar while destinations.id is uuid, so the
+      // join needs an explicit cast to compare them.
+      .innerJoin(Destination, 'dest', 'dest.id::text = tour.destination_id')
+      .where('tour.status = :status', { status: TourStatus.APPROVED })
+      .andWhere('LOWER(dest.name) LIKE :name', {
+        name: `%${name.toLowerCase()}%`,
+      })
+      .orderBy('tour.rating_avg', 'DESC')
+      .limit(limit)
+      .select('tour.id', 'id')
+      .addSelect('tour.slug', 'slug')
+      .addSelect('tour.title', 'title')
+      .addSelect('dest.name', 'destinationName')
+      .addSelect('tour.price_minor', 'priceMinor')
+      .addSelect('tour.duration_minutes', 'durationMinutes')
+      .getRawMany<{
+        id: string;
+        slug: string;
+        title: string;
+        destinationName: string;
+        priceMinor: string;
+        durationMinutes: string;
+      }>();
+
+    return rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      destinationName: r.destinationName,
+      priceMinor: Number(r.priceMinor),
+      durationMinutes: Number(r.durationMinutes),
+    }));
   }
 }
