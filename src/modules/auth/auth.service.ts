@@ -11,8 +11,10 @@ import { AuthUser } from './auth-user.type';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenRepository } from './refresh-token.repository';
+import { PasswordResetTokenRepository } from './password-reset-token.repository';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/entities/user.entity';
+import { MailService } from '../mail/mail.service';
 
 export type AuthTokens = { accessToken: string; refreshToken: string };
 
@@ -28,9 +30,34 @@ export class AuthService {
   constructor(
     private readonly users: UsersService,
     private readonly refreshTokens: RefreshTokenRepository,
+    private readonly resetTokens: PasswordResetTokenRepository,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.users.findByEmail(email);
+    // Always resolve, so the endpoint never reveals whether an email exists.
+    if (!user) return;
+    const rawToken = randomBytes(32).toString('hex');
+    await this.resetTokens.create({
+      userId: user.id,
+      tokenHash: this.hash(rawToken),
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+    });
+    const base = this.config.get<string>('frontendResetUrl')!;
+    await this.mail.sendPasswordReset(user.email, `${base}?token=${rawToken}`);
+  }
+
+  async resetPassword(rawToken: string, newPassword: string): Promise<void> {
+    const record = await this.resetTokens.findActiveByHash(this.hash(rawToken));
+    if (!record || record.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+    await this.users.setPassword(record.userId, await argon2.hash(newPassword));
+    await this.resetTokens.markUsed(record.id);
+  }
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
     if (await this.users.findByEmail(dto.email)) {

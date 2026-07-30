@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { DestinationsModule } from './modules/destinations/destinations.module';
+import { MailModule } from './modules/mail/mail.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
@@ -18,6 +19,7 @@ import { UsersModule } from './modules/users/users.module';
     DatabaseModule,
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
+    MailModule,
     UsersModule,
     AuthModule,
     DestinationsModule,

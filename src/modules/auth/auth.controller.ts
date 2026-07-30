@@ -3,9 +3,11 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { AuthService } from './auth.service';
 import { AuthTokensDto } from './dto/auth-tokens.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -38,6 +40,24 @@ export class AuthController {
   @ResponseMessage('Logged out')
   async logout(@Body() dto: RefreshDto): Promise<null> {
     await this.auth.logout(dto.refreshToken);
+    return null;
+  }
+
+  @Post('forgot-password')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Email a password reset link (always succeeds)' })
+  @ResponseMessage('If the email exists, a reset link has been sent')
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<null> {
+    await this.auth.forgotPassword(dto.email);
+    return null;
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Set a new password using a reset token' })
+  @ResponseMessage('Password updated')
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<null> {
+    await this.auth.resetPassword(dto.token, dto.password);
     return null;
   }
 }

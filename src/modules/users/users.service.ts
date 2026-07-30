@@ -36,4 +36,10 @@ export class UsersService {
   ): Promise<void> {
     return this.users.addPoints(id, points, manager);
   }
+
+  async setPassword(id: string, passwordHash: string): Promise<void> {
+    const user = await this.findById(id);
+    user.passwordHash = passwordHash;
+    await this.users.save(user);
+  }
 }

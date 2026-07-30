@@ -5,8 +5,10 @@ import { Test } from '@nestjs/testing';
 import * as argon2 from 'argon2';
 import { AuthService } from './auth.service';
 import { RefreshTokenRepository } from './refresh-token.repository';
+import { PasswordResetTokenRepository } from './password-reset-token.repository';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/entities/user.entity';
+import { MailService } from '../mail/mail.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -20,6 +22,12 @@ describe('AuthService', () => {
     findActiveByHash: jest.Mock;
     revoke: jest.Mock;
   };
+  let resetTokens: {
+    create: jest.Mock;
+    findActiveByHash: jest.Mock;
+    markUsed: jest.Mock;
+  };
+  let mail: { sendPasswordReset: jest.Mock };
 
   beforeEach(async () => {
     users = {
@@ -32,11 +40,19 @@ describe('AuthService', () => {
       findActiveByHash: jest.fn(),
       revoke: jest.fn(),
     };
+    resetTokens = {
+      create: jest.fn(),
+      findActiveByHash: jest.fn(),
+      markUsed: jest.fn(),
+    };
+    mail = { sendPasswordReset: jest.fn() };
     const module = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: users },
         { provide: RefreshTokenRepository, useValue: tokens },
+        { provide: PasswordResetTokenRepository, useValue: resetTokens },
+        { provide: MailService, useValue: mail },
         {
           provide: JwtService,
           useValue: {
@@ -114,5 +130,31 @@ describe('AuthService', () => {
     await service.refresh('raw');
     expect(tokens.revoke).toHaveBeenCalledWith('rt1');
     expect(tokens.create).toHaveBeenCalled();
+  });
+
+  it('does not reveal whether an email exists on forgot-password', async () => {
+    users.findByEmail.mockResolvedValue(null);
+    await expect(
+      service.forgotPassword('ghost@b.com'),
+    ).resolves.toBeUndefined();
+    expect(resetTokens.create).not.toHaveBeenCalled();
+    expect(mail.sendPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it('issues a reset token and emails it when the user exists', async () => {
+    users.findByEmail.mockResolvedValue({ id: 'u1', email: 'a@b.com' });
+    await service.forgotPassword('a@b.com');
+    expect(resetTokens.create).toHaveBeenCalled();
+    expect(mail.sendPasswordReset).toHaveBeenCalledWith(
+      'a@b.com',
+      expect.stringContaining('token='),
+    );
+  });
+
+  it('rejects reset with an invalid or expired token', async () => {
+    resetTokens.findActiveByHash.mockResolvedValue(null);
+    await expect(service.resetPassword('bad', 'newPass123')).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 });

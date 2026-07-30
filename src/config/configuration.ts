@@ -20,6 +20,19 @@ export const configuration = () => ({
       10,
     ),
   },
+  brevo: {
+    apiKey: process.env.BREVO_API_KEY ?? '',
+    senderEmail: process.env.BREVO_SENDER_EMAIL ?? 'no-reply@voyago.test',
+    senderName: process.env.BREVO_SENDER_NAME ?? 'Voyago',
+    baseUrl: process.env.BREVO_BASE_URL ?? 'https://api.brevo.com/v3',
+  },
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME ?? '',
+    apiKey: process.env.CLOUDINARY_API_KEY ?? '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
+  },
+  frontendResetUrl:
+    process.env.FRONTEND_RESET_URL ?? 'http://localhost:5173/reset-password',
 });
 
 export type AppConfig = ReturnType<typeof configuration>;
