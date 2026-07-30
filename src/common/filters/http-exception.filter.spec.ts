@@ -14,34 +14,28 @@ function mockHost(url = '/api/v1/tours/42') {
 }
 
 describe('HttpExceptionFilter', () => {
-  it('renders the standard envelope for an HttpException', () => {
+  it('renders the uniform envelope for an HttpException', () => {
     const { host, status, json } = mockHost();
     new HttpExceptionFilter().catch(
       new NotFoundException('Tour with id 42 not found'),
       host,
     );
     expect(status).toHaveBeenCalledWith(404);
-    expect(json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        statusCode: 404,
-        message: 'Tour with id 42 not found',
-        error: 'Not Found',
-        path: '/api/v1/tours/42',
-        timestamp: expect.any(String),
-      }),
-    );
+    expect(json).toHaveBeenCalledWith({
+      code: 404,
+      message: 'Tour with id 42 not found',
+      data: null,
+    });
   });
 
   it('maps an unknown error to a 500 without leaking its message', () => {
     const { host, status, json } = mockHost();
     new HttpExceptionFilter().catch(new Error('boom: secret detail'), host);
     expect(status).toHaveBeenCalledWith(500);
-    expect(json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        statusCode: 500,
-        error: 'Internal Server Error',
-        message: expect.not.stringContaining('secret detail'),
-      }),
-    );
+    expect(json).toHaveBeenCalledWith({
+      code: 500,
+      message: 'Internal server error',
+      data: null,
+    });
   });
 });

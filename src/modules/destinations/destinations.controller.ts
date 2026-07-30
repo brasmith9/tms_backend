@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
   Param,
   Patch,
   Post,
@@ -11,6 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiEnvelopeResponse,
+  ApiPaginatedResponse,
+} from '../../common/dto/api-response.dto';
+import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -28,13 +32,18 @@ export class DestinationsController {
 
   @Get()
   @ApiOperation({ summary: 'List destinations (public)' })
+  @ApiPaginatedResponse(DestinationResponseDto)
   async findAll(@Query() q: PaginationQueryDto) {
-    const { data, meta } = await this.service.findAll(q);
-    return { data: data.map((d) => DestinationResponseDto.from(d)), meta };
+    const page = await this.service.findAll(q);
+    return {
+      ...page,
+      results: page.results.map((d) => DestinationResponseDto.from(d)),
+    };
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get one destination (public)' })
+  @ApiEnvelopeResponse(DestinationResponseDto)
   async findOne(@Param('id') id: string): Promise<DestinationResponseDto> {
     return DestinationResponseDto.from(await this.service.findOne(id));
   }
@@ -63,12 +72,13 @@ export class DestinationsController {
   }
 
   @Delete(':id')
-  @HttpCode(204)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete a destination (admin)' })
-  async remove(@Param('id') id: string): Promise<void> {
+  @ResponseMessage('Destination deleted')
+  async remove(@Param('id') id: string): Promise<null> {
     await this.service.remove(id);
+    return null;
   }
 }

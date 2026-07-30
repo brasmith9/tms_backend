@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/dto/api-response.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -39,9 +40,13 @@ export class BookingsController {
 
   @Get('me')
   @ApiOperation({ summary: 'List my bookings, filtered by tab' })
+  @ApiPaginatedResponse(BookingResponseDto)
   async mine(@CurrentUser() user: AuthUser, @Query() q: BookingQueryDto) {
-    const { data, meta } = await this.bookings.findMine(user.id, q);
-    return { data: data.map((b) => BookingResponseDto.from(b)), meta };
+    const page = await this.bookings.findMine(user.id, q);
+    return {
+      ...page,
+      results: page.results.map((b) => BookingResponseDto.from(b)),
+    };
   }
 
   @Get(':reference')

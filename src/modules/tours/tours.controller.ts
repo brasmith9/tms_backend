@@ -10,6 +10,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiEnvelopeResponse,
+  ApiPaginatedResponse,
+} from '../../common/dto/api-response.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -36,13 +40,18 @@ export class ToursController {
 
   @Get()
   @ApiOperation({ summary: 'Search approved tours (public)' })
+  @ApiPaginatedResponse(TourResponseDto)
   async search(@Query() q: TourQueryDto) {
-    const { data, meta } = await this.tours.search(q);
-    return { data: data.map((t) => TourResponseDto.from(t)), meta };
+    const page = await this.tours.search(q);
+    return {
+      ...page,
+      results: page.results.map((t) => TourResponseDto.from(t)),
+    };
   }
 
   @Get(':slug')
   @ApiOperation({ summary: 'Get an approved tour by slug (public)' })
+  @ApiEnvelopeResponse(TourResponseDto)
   async findBySlug(@Param('slug') slug: string): Promise<TourResponseDto> {
     return TourResponseDto.from(await this.tours.findBySlug(slug));
   }

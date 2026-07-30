@@ -31,12 +31,17 @@ describe('DestinationsService', () => {
     service = module.get(DestinationsService);
   });
 
-  it('returns a paginated envelope', async () => {
+  it('returns a paginated result', async () => {
     repo.findAndCount.mockResolvedValue([[{ id: 'd1' }], 1]);
     const q = Object.assign(new PaginationQueryDto(), { page: 1, limit: 20 });
     const res = await service.findAll(q);
-    expect(res.meta).toEqual({ total: 1, page: 1, limit: 20, totalPages: 1 });
-    expect(res.data).toHaveLength(1);
+    expect(res).toMatchObject({
+      total: 1,
+      page: 1,
+      pageSize: 20,
+      totalPages: 1,
+    });
+    expect(res.results).toHaveLength(1);
   });
 
   it('throws NotFound for an unknown id', async () => {

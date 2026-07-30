@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { AuthService } from './auth.service';
 import { AuthTokensDto } from './dto/auth-tokens.dto';
 import { LoginDto } from './dto/login.dto';
@@ -32,9 +33,11 @@ export class AuthController {
   }
 
   @Post('logout')
-  @HttpCode(204)
+  @HttpCode(200)
   @ApiOperation({ summary: 'Revoke a refresh token' })
-  async logout(@Body() dto: RefreshDto): Promise<void> {
+  @ResponseMessage('Logged out')
+  async logout(@Body() dto: RefreshDto): Promise<null> {
     await this.auth.logout(dto.refreshToken);
+    return null;
   }
 }

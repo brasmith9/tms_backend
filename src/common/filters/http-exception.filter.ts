@@ -6,16 +6,19 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
+/**
+ * Renders every error in the uniform envelope: { code, message, data: null }.
+ * `code` is the HTTP status; `message` is a human-readable string (validation
+ * errors are joined into one).
+ */
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const ctx = host.switchToHttp();
-    const res = ctx.getResponse<Response>();
-    const req = ctx.getRequest<Request>();
+    const res = host.switchToHttp().getResponse<Response>();
 
     const isHttp = exception instanceof HttpException;
     const status = isHttp
@@ -23,11 +26,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
       : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const payload = isHttp ? exception.getResponse() : null;
-    const message =
+    const raw =
       typeof payload === 'string'
         ? payload
         : ((payload as { message?: string | string[] })?.message ??
           'Internal server error');
+    const message = Array.isArray(raw) ? raw.join('; ') : raw;
 
     if (!isHttp) {
       this.logger.error(
@@ -36,23 +40,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     res.status(status).json({
-      statusCode: status,
-      message,
-      error: this.humanizeError(status),
-      timestamp: new Date().toISOString(),
-      path: req.url,
+      code: status,
+      message: isHttp ? message : 'Internal server error',
+      data: null,
     });
-  }
-
-  private humanizeError(status: number): string {
-    const map: Record<number, string> = {
-      400: 'Bad Request',
-      401: 'Unauthorized',
-      403: 'Forbidden',
-      404: 'Not Found',
-      409: 'Conflict',
-      500: 'Internal Server Error',
-    };
-    return map[status] ?? 'Error';
   }
 }

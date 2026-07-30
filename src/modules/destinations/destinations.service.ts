@@ -2,8 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import {
   applyPagination,
-  paginated,
-  PageMeta,
+  paginate,
+  Paginated,
 } from '../../common/pagination/paginate';
 import { CreateDestinationDto } from './dto/create-destination.dto';
 import { UpdateDestinationDto } from './dto/update-destination.dto';
@@ -14,12 +14,10 @@ import { DestinationsRepository } from './destinations.repository';
 export class DestinationsService {
   constructor(private readonly repo: DestinationsRepository) {}
 
-  async findAll(
-    q: PaginationQueryDto,
-  ): Promise<{ data: Destination[]; meta: PageMeta }> {
+  async findAll(q: PaginationQueryDto): Promise<Paginated<Destination>> {
     const { skip, take } = applyPagination(q);
     const [data, total] = await this.repo.findAndCount(skip, take);
-    return paginated(data, total, q);
+    return paginate(data, total, q);
   }
 
   async findOne(id: string): Promise<Destination> {

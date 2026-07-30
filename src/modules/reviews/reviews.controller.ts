@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/dto/api-response.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -27,12 +28,16 @@ export class ReviewsController {
 
   @Get('tours/:id/reviews')
   @ApiOperation({ summary: 'List reviews for a tour (public)' })
+  @ApiPaginatedResponse(ReviewResponseDto)
   async forTour(
     @Param('id', ParseUUIDPipe) id: string,
     @Query() q: PaginationQueryDto,
   ) {
-    const { data, meta } = await this.reviews.listForTour(id, q);
-    return { data: data.map((r) => ReviewResponseDto.from(r)), meta };
+    const page = await this.reviews.listForTour(id, q);
+    return {
+      ...page,
+      results: page.results.map((r) => ReviewResponseDto.from(r)),
+    };
   }
 
   @Post('bookings/:reference/review')

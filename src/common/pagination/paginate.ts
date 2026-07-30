@@ -1,9 +1,10 @@
 import { PaginationQueryDto } from '../dto/pagination-query.dto';
 
-export interface PageMeta {
+export interface Paginated<T> {
+  results: T[];
   total: number;
   page: number;
-  limit: number;
+  pageSize: number;
   totalPages: number;
 }
 
@@ -14,19 +15,16 @@ export function applyPagination(q: PaginationQueryDto): {
   return { skip: (q.page - 1) * q.limit, take: q.limit };
 }
 
-export function buildMeta(total: number, q: PaginationQueryDto): PageMeta {
-  return {
-    total,
-    page: q.page,
-    limit: q.limit,
-    totalPages: Math.ceil(total / q.limit),
-  };
-}
-
-export function paginated<T>(
-  data: T[],
+export function paginate<T>(
+  results: T[],
   total: number,
   q: PaginationQueryDto,
-): { data: T[]; meta: PageMeta } {
-  return { data, meta: buildMeta(total, q) };
+): Paginated<T> {
+  return {
+    results,
+    total,
+    page: q.page,
+    pageSize: q.limit,
+    totalPages: Math.ceil(total / q.limit),
+  };
 }

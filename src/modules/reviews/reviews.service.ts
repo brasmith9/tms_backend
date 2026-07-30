@@ -5,9 +5,9 @@ import {
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import {
-  PageMeta,
+  Paginated,
   applyPagination,
-  paginated,
+  paginate,
 } from '../../common/pagination/paginate';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { BookingsService } from '../bookings/bookings.service';
@@ -66,9 +66,9 @@ export class ReviewsService {
   async listForTour(
     tourId: string,
     q: PaginationQueryDto,
-  ): Promise<{ data: Review[]; meta: PageMeta }> {
+  ): Promise<Paginated<Review>> {
     const { skip, take } = applyPagination(q);
     const [data, total] = await this.repo.findForTour(tourId, skip, take);
-    return paginated(data, total, q);
+    return paginate(data, total, q);
   }
 }

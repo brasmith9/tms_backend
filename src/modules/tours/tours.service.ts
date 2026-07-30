@@ -7,9 +7,9 @@ import {
 import { randomBytes } from 'crypto';
 import { EntityManager } from 'typeorm';
 import {
-  PageMeta,
+  Paginated,
   applyPagination,
-  paginated,
+  paginate,
 } from '../../common/pagination/paginate';
 import { DestinationsService } from '../destinations/destinations.service';
 import { CreateTourDto } from './dto/create-tour.dto';
@@ -39,10 +39,10 @@ export class ToursService {
     );
   }
 
-  async search(q: TourQueryDto): Promise<{ data: Tour[]; meta: PageMeta }> {
+  async search(q: TourQueryDto): Promise<Paginated<Tour>> {
     const { skip, take } = applyPagination(q);
     const [data, total] = await this.repo.searchApproved(q, skip, take);
-    return paginated(data, total, q);
+    return paginate(data, total, q);
   }
 
   async findBySlug(slug: string): Promise<Tour> {

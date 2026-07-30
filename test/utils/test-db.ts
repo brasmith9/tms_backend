@@ -10,6 +10,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../src/app.module';
 import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
+import { ResponseEnvelopeInterceptor } from '../../src/common/interceptors/response-envelope.interceptor';
 import { UserRole } from '../../src/modules/users/entities/user.entity';
 
 /**
@@ -17,13 +18,10 @@ import { UserRole } from '../../src/modules/users/entities/user.entity';
  * makes DatabaseModule synchronize + dropSchema each run) with the same global
  * pipes/filters as production.
  */
-export async function bootstrapTestApp(): Promise<INestApplication> {
-  process.env.NODE_ENV = 'test';
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
+import type { TestingModuleBuilder } from '@nestjs/testing';
 
-  const app = moduleRef.createNestApplication({ rawBody: true });
+/** Applies the same global pipes/filters/versioning as production main.ts. */
+export function applyTestGlobals(app: INestApplication): void {
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.useGlobalPipes(
@@ -33,8 +31,24 @@ export async function bootstrapTestApp(): Promise<INestApplication> {
       transform: true,
     }),
   );
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  const reflector = app.get(Reflector);
+  app.useGlobalInterceptors(
+    new ResponseEnvelopeInterceptor(reflector),
+    new ClassSerializerInterceptor(reflector),
+  );
   app.useGlobalFilters(new HttpExceptionFilter());
+}
+
+export async function bootstrapTestApp(
+  configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder,
+): Promise<INestApplication> {
+  process.env.NODE_ENV = 'test';
+  let builder = Test.createTestingModule({ imports: [AppModule] });
+  if (configure) builder = configure(builder);
+  const moduleRef = await builder.compile();
+
+  const app = moduleRef.createNestApplication({ rawBody: true });
+  applyTestGlobals(app);
   await app.init();
   return app;
 }
@@ -64,7 +78,7 @@ export async function tokenFor(
   const login = await request(server)
     .post('/api/v1/auth/login')
     .send({ email, password: 'password123' });
-  return login.body.accessToken as string;
+  return login.body.data.accessToken as string;
 }
 
 /**
@@ -100,12 +114,12 @@ export async function seedApprovedTourWithDeparture(
     .set('Authorization', `Bearer ${operatorToken}`)
     .send({
       title: `Tour ${stamp}`,
-      destinationId: dest.body.id,
+      destinationId: dest.body.data.id,
       description: 'a tour',
       priceMinor: 12000,
       durationMinutes: 120,
     });
-  const tourId = tour.body.id as string;
+  const tourId = tour.body.data.id as string;
 
   await request(server)
     .post(`/api/v1/tours/${tourId}/submit`)
@@ -119,5 +133,5 @@ export async function seedApprovedTourWithDeparture(
     .set('Authorization', `Bearer ${operatorToken}`)
     .send({ departsAt: '2027-01-01T08:30:00.000Z', capacity });
 
-  return { departureId: departure.body.id as string, tourId };
+  return { departureId: departure.body.data.id as string, tourId };
 }

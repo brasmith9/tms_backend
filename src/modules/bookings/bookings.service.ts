@@ -8,9 +8,9 @@ import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource, EntityManager } from 'typeorm';
 import {
-  PageMeta,
+  Paginated,
   applyPagination,
-  paginated,
+  paginate,
 } from '../../common/pagination/paginate';
 import { generateReference } from './booking-reference';
 import {
@@ -208,7 +208,7 @@ export class BookingsService {
   async findMine(
     touristId: string,
     q: BookingQueryDto,
-  ): Promise<{ data: TourBooking[]; meta: PageMeta }> {
+  ): Promise<Paginated<TourBooking>> {
     const { skip, take } = applyPagination(q);
     const [data, total] = await this.repo.findMine(
       touristId,
@@ -217,7 +217,7 @@ export class BookingsService {
       skip,
       take,
     );
-    return paginated(data, total, q);
+    return paginate(data, total, q);
   }
 
   /** Cancel unpaid PENDING bookings past the seat-hold window. Returns the count. */
