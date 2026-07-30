@@ -10,14 +10,14 @@ import { PaymentStatus } from './entities/payment.entity';
 describe('PaymentsService webhook', () => {
   let service: PaymentsService;
   let repo: { findByProviderRef: jest.Mock; save: jest.Mock };
-  let bookings: { confirmPaid: jest.Mock };
+  let bookings: { confirmPaid: jest.Mock; notifyStatusChanged: jest.Mock };
 
   beforeEach(async () => {
     repo = {
       findByProviderRef: jest.fn(),
       save: jest.fn((p: unknown) => Promise.resolve(p)),
     };
-    bookings = { confirmPaid: jest.fn() };
+    bookings = { confirmPaid: jest.fn(), notifyStatusChanged: jest.fn() };
     const module = await Test.createTestingModule({
       providers: [
         PaymentsService,

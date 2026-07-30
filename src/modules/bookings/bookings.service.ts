@@ -68,7 +68,10 @@ export class BookingsService {
           manager,
         );
 
-        const consumed = await this.repo.seatsConsumed(dto.departureId, manager);
+        const consumed = await this.repo.seatsConsumed(
+          dto.departureId,
+          manager,
+        );
         if (consumed + dto.seats > departure.capacity) {
           throw new ConflictException(
             'Not enough seats remaining on this departure',

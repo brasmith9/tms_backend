@@ -7,10 +7,8 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import {
-  BOOKING_STATUS_CHANGED,
-  BookingStatusChangedEvent,
-} from '../bookings/booking-events';
+import { BOOKING_STATUS_CHANGED } from '../bookings/booking-events';
+import type { BookingStatusChangedEvent } from '../bookings/booking-events';
 import { authenticateSocket } from './ws-auth';
 
 /**

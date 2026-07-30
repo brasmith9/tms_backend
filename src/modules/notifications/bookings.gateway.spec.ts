@@ -8,10 +8,7 @@ describe('BookingsGateway', () => {
   it('emits booking.status_changed to the user room', () => {
     const emit = jest.fn();
     const to = jest.fn(() => ({ emit }));
-    const gateway = new BookingsGateway(
-      {} as JwtService,
-      {} as ConfigService,
-    );
+    const gateway = new BookingsGateway({} as JwtService, {} as ConfigService);
     gateway.server = { to } as unknown as Server;
 
     gateway.emitStatusChanged('u1', {
@@ -24,7 +21,10 @@ describe('BookingsGateway', () => {
     expect(to).toHaveBeenCalledWith('user:u1');
     expect(emit).toHaveBeenCalledWith(
       'booking.status_changed',
-      expect.objectContaining({ reference: 'TUR-2026-0007', status: 'CONFIRMED' }),
+      expect.objectContaining({
+        reference: 'TUR-2026-0007',
+        status: 'CONFIRMED',
+      }),
     );
   });
 });

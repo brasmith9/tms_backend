@@ -7,10 +7,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ConnectedSocket } from '@nestjs/websockets';
-import {
-  AVAILABILITY_CHANGED,
-  AvailabilityChangedEvent,
-} from '../bookings/booking-events';
+import { AVAILABILITY_CHANGED } from '../bookings/booking-events';
+import type { AvailabilityChangedEvent } from '../bookings/booking-events';
 
 /**
  * Broadcasts remaining-seat changes on a departure. Clients opt in per
