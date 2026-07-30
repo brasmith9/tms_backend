@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { DestinationsModule } from './modules/destinations/destinations.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ToursModule } from './modules/tours/tours.module';
@@ -22,6 +23,7 @@ import { UsersModule } from './modules/users/users.module';
     BookingsModule,
     PaymentsModule,
     ReviewsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

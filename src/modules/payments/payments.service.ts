@@ -68,12 +68,14 @@ export class PaymentsService {
     const payment = await this.repo.findByProviderRef(event.data.reference);
     if (!payment || payment.status === PaymentStatus.PAID) return; // idempotent
 
-    await this.dataSource.transaction(async (manager) => {
+    const booking = await this.dataSource.transaction(async (manager) => {
       payment.status = PaymentStatus.PAID;
       payment.rawEvent = event;
       await this.repo.save(payment, manager);
-      await this.bookings.confirmPaid(payment.bookingId, manager);
+      return this.bookings.confirmPaid(payment.bookingId, manager);
     });
+    // After commit: push the CONFIRMED status to the tourist.
+    this.bookings.notifyStatusChanged(booking);
   }
 
   async verify(reference: string, tourist: AuthUser): Promise<Payment> {
@@ -83,11 +85,12 @@ export class PaymentsService {
 
     const result = await this.paystack.verifyTransaction(payment.providerRef);
     if (result.status === 'success' && payment.status !== PaymentStatus.PAID) {
-      await this.dataSource.transaction(async (manager) => {
+      const booking = await this.dataSource.transaction(async (manager) => {
         payment.status = PaymentStatus.PAID;
         await this.repo.save(payment, manager);
-        await this.bookings.confirmPaid(payment.bookingId, manager);
+        return this.bookings.confirmPaid(payment.bookingId, manager);
       });
+      this.bookings.notifyStatusChanged(booking);
     }
     return payment;
   }
