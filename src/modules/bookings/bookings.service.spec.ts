@@ -7,6 +7,7 @@ import { BookingsService } from './bookings.service';
 import { BookingsRepository } from './bookings.repository';
 import { ToursService } from '../tours/tours.service';
 import { TourDeparturesService } from '../tours/tour-departures.service';
+import { UsersService } from '../users/users.service';
 import { BookingStatus } from './entities/tour-booking.entity';
 
 describe('BookingsService', () => {
@@ -50,6 +51,7 @@ describe('BookingsService', () => {
         },
         { provide: DataSource, useValue: dataSource },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+        { provide: UsersService, useValue: { addLoyaltyPoints: jest.fn() } },
       ],
     }).compile();
     service = module.get(BookingsService);

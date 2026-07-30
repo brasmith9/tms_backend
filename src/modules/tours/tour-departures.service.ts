@@ -58,4 +58,8 @@ export class TourDeparturesService {
   findPast(now: Date): Promise<TourDeparture[]> {
     return this.repo.findPast(now);
   }
+
+  tourIdFor(departureId: string): Promise<string | null> {
+    return this.repo.tourIdFor(departureId);
+  }
 }

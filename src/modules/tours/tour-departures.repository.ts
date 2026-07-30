@@ -48,4 +48,9 @@ export class TourDeparturesRepository {
       where: { departsAt: LessThan(now), status: DepartureStatus.SCHEDULED },
     });
   }
+
+  async tourIdFor(departureId: string): Promise<string | null> {
+    const departure = await this.repo.findOne({ where: { id: departureId } });
+    return departure?.tourId ?? null;
+  }
 }

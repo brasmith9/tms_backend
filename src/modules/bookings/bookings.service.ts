@@ -22,6 +22,7 @@ import { TourDeparturesService } from '../tours/tour-departures.service';
 import { ToursService } from '../tours/tours.service';
 import type { AuthUser } from '../auth/auth-user.type';
 import { UserRole } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 
 type BookingConfig = {
   seatHoldMinutes: number;
@@ -37,6 +38,7 @@ export class BookingsService {
     private readonly config: ConfigService,
     private readonly dataSource: DataSource,
     private readonly events: EventEmitter2,
+    private readonly users: UsersService,
   ) {}
 
   /** SeatCounter port implementation consumed by TourDeparturesService. */
@@ -169,5 +171,45 @@ export class BookingsService {
       take,
     );
     return paginated(data, total, q);
+  }
+
+  /** Cancel unpaid PENDING bookings past the seat-hold window. Returns the count. */
+  async expireStalePending(): Promise<number> {
+    const holdMinutes =
+      this.config.get<BookingConfig>('booking')!.seatHoldMinutes;
+    const cutoff = new Date(Date.now() - holdMinutes * 60 * 1000);
+    return this.dataSource.transaction(async (manager) => {
+      const stale = await this.repo.findExpiredPending(cutoff, manager);
+      for (const booking of stale) {
+        booking.status = BookingStatus.CANCELLED;
+        booking.cancelledAt = new Date();
+        await this.repo.save(booking, manager);
+      }
+      return stale.length;
+    });
+  }
+
+  /** Mark CONFIRMED bookings on past departures COMPLETED and award loyalty points. */
+  async markCompletedAndAward(): Promise<number> {
+    const pastDepartures = await this.departures.findPast(new Date());
+    if (pastDepartures.length === 0) return 0;
+    const departureIds = pastDepartures.map((d) => d.id);
+
+    return this.dataSource.transaction(async (manager) => {
+      const rows = await this.repo.findConfirmedForDepartures(
+        departureIds,
+        manager,
+      );
+      for (const booking of rows) {
+        booking.status = BookingStatus.COMPLETED;
+        await this.repo.save(booking, manager);
+        // 1 loyalty point per GHS 10 spent (1000 pesewas).
+        const points = Math.floor(booking.totalMinor / 1000);
+        if (points > 0) {
+          await this.users.addLoyaltyPoints(booking.touristId, points, manager);
+        }
+      }
+      return rows.length;
+    });
   }
 }
