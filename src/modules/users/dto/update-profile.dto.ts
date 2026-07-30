@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Length } from 'class-validator';
+import { IsOptional, IsString, IsUrl, Length } from 'class-validator';
 
 export class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'Kofi Mensah' })
@@ -13,4 +13,13 @@ export class UpdateProfileDto {
   @IsString()
   @Length(7, 20)
   phone?: string;
+
+  @ApiPropertyOptional({
+    example:
+      'https://res.cloudinary.com/demo/image/upload/v1/voyago/avatar.jpg',
+    description: 'Uploaded image URL (upload via POST /uploads/image first)',
+  })
+  @IsOptional()
+  @IsUrl()
+  avatarUrl?: string;
 }

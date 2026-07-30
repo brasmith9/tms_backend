@@ -22,6 +22,7 @@ export class User {
   @Exclude() @Column({ name: 'password_hash' }) passwordHash!: string;
   @Column({ name: 'full_name' }) fullName!: string;
   @Column({ nullable: true }) phone?: string;
+  @Column({ name: 'avatar_url', nullable: true }) avatarUrl?: string;
   @Column({ type: 'enum', enum: UserRole, default: UserRole.TOURIST })
   role!: UserRole;
   @Column({ name: 'loyalty_points', type: 'int', default: 0 })

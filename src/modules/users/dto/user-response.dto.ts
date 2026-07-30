@@ -6,6 +6,7 @@ export class UserResponseDto {
   @ApiProperty() email!: string;
   @ApiProperty() fullName!: string;
   @ApiProperty({ required: false }) phone?: string;
+  @ApiProperty({ required: false }) avatarUrl?: string;
   @ApiProperty({ enum: UserRole }) role!: UserRole;
   @ApiProperty() loyaltyPoints!: number;
 
@@ -15,6 +16,7 @@ export class UserResponseDto {
     dto.email = u.email;
     dto.fullName = u.fullName;
     dto.phone = u.phone;
+    dto.avatarUrl = u.avatarUrl;
     dto.role = u.role;
     dto.loyaltyPoints = u.loyaltyPoints;
     return dto;
