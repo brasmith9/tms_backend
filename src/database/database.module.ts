@@ -6,14 +6,20 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   imports: [
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        url: config.get<string>('databaseUrl'),
-        autoLoadEntities: true,
-        synchronize: false,
-        migrationsRun: true,
-        migrations: ['dist/database/migrations/*.js'],
-      }),
+      useFactory: (config: ConfigService) => {
+        // E2E runs against a throwaway database: build the schema from entities
+        // and drop it each boot rather than running the compiled migrations.
+        const isTest = process.env.NODE_ENV === 'test';
+        return {
+          type: 'postgres',
+          url: config.get<string>('databaseUrl'),
+          autoLoadEntities: true,
+          synchronize: isTest,
+          dropSchema: isTest,
+          migrationsRun: !isTest,
+          migrations: ['dist/database/migrations/*.js'],
+        };
+      },
     }),
   ],
 })

@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { EntityManager } from 'typeorm';
 import { CreateDepartureDto } from './dto/create-departure.dto';
 import { TourDeparture } from './entities/tour-departure.entity';
@@ -12,7 +13,10 @@ export class TourDeparturesService {
   constructor(
     private readonly repo: TourDeparturesRepository,
     private readonly tours: ToursService,
-    @Inject(SEAT_COUNTER) private readonly seatCounter: SeatCounter,
+    // The seat counter is provided by the bookings module. Resolving it lazily
+    // via ModuleRef (rather than constructor injection) breaks the otherwise
+    // circular Tours <-> Bookings construction dependency.
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   async create(
@@ -37,7 +41,10 @@ export class TourDeparturesService {
   }
 
   async seatsLeft(departure: TourDeparture): Promise<number> {
-    const consumed = await this.seatCounter.seatsConsumed(departure.id);
+    const counter = this.moduleRef.get<SeatCounter>(SEAT_COUNTER, {
+      strict: false,
+    });
+    const consumed = await counter.seatsConsumed(departure.id);
     return departure.capacity - consumed;
   }
 
