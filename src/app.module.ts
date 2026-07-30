@@ -3,6 +3,7 @@ import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DestinationsModule } from './modules/destinations/destinations.module';
+import { ToursModule } from './modules/tours/tours.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -12,6 +13,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     AuthModule,
     DestinationsModule,
+    ToursModule,
   ],
 })
 export class AppModule {}
