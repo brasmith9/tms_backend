@@ -1,5 +1,6 @@
 import { ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import { DataSource, EntityManager } from 'typeorm';
 import { BookingsService } from './bookings.service';
@@ -48,6 +49,7 @@ describe('BookingsService', () => {
           },
         },
         { provide: DataSource, useValue: dataSource },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
     service = module.get(BookingsService);

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource, EntityManager } from 'typeorm';
 import {
   PageMeta,
@@ -12,6 +13,7 @@ import {
   paginated,
 } from '../../common/pagination/paginate';
 import { generateReference } from './booking-reference';
+import { BOOKING_CANCELLED, BookingCancelledEvent } from './booking-events';
 import { BookingsRepository } from './bookings.repository';
 import { BookingQueryDto } from './dto/booking-query.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -34,6 +36,7 @@ export class BookingsService {
     private readonly tours: ToursService,
     private readonly config: ConfigService,
     private readonly dataSource: DataSource,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** SeatCounter port implementation consumed by TourDeparturesService. */
@@ -82,24 +85,24 @@ export class BookingsService {
   }
 
   async cancel(reference: string, touristId: string): Promise<TourBooking> {
-    return this.dataSource.transaction(async (manager) => {
-      const booking = await this.repo.findByReference(reference, manager);
-      if (!booking) {
+    const booking = await this.dataSource.transaction(async (manager) => {
+      const found = await this.repo.findByReference(reference, manager);
+      if (!found) {
         throw new NotFoundException(`Booking ${reference} not found`);
       }
-      if (booking.touristId !== touristId) {
+      if (found.touristId !== touristId) {
         throw new ForbiddenException('Not your booking');
       }
       if (
-        booking.status !== BookingStatus.PENDING &&
-        booking.status !== BookingStatus.CONFIRMED
+        found.status !== BookingStatus.PENDING &&
+        found.status !== BookingStatus.CONFIRMED
       ) {
         throw new ConflictException(
           'Booking cannot be cancelled in its current state',
         );
       }
       const departure = await this.departures.lockAndGet(
-        booking.departureId,
+        found.departureId,
         manager,
       );
       const windowMs =
@@ -109,10 +112,17 @@ export class BookingsService {
       if (departure && departure.departsAt.getTime() - Date.now() < windowMs) {
         throw new ConflictException('Cancellation window has closed');
       }
-      booking.status = BookingStatus.CANCELLED;
-      booking.cancelledAt = new Date();
-      return this.repo.save(booking, manager);
+      found.status = BookingStatus.CANCELLED;
+      found.cancelledAt = new Date();
+      return this.repo.save(found, manager);
     });
+
+    // Emitted after commit so a rolled-back cancellation never triggers a refund.
+    this.events.emit(BOOKING_CANCELLED, {
+      bookingId: booking.id,
+      reference: booking.reference,
+    } satisfies BookingCancelledEvent);
+    return booking;
   }
 
   /** Called by PaymentsService inside its transaction after a successful charge. */
