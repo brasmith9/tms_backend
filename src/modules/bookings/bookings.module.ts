@@ -5,6 +5,7 @@ import { ToursModule } from '../tours/tours.module';
 import { UsersModule } from '../users/users.module';
 import { BookingsController } from './bookings.controller';
 import { BookingsRepository } from './bookings.repository';
+import { BookingsScheduler } from './bookings.scheduler';
 import { BookingsService } from './bookings.service';
 import { TourBooking } from './entities/tour-booking.entity';
 
@@ -14,6 +15,7 @@ import { TourBooking } from './entities/tour-booking.entity';
   providers: [
     BookingsService,
     BookingsRepository,
+    BookingsScheduler,
     // Fulfils the SEAT_COUNTER port that TourDeparturesService resolves lazily.
     { provide: SEAT_COUNTER, useExisting: BookingsService },
   ],
