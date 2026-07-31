@@ -11,7 +11,14 @@ import {
   TourBooking,
   BookingStatus,
 } from '../../modules/bookings/entities/tour-booking.entity';
-import { SEED_PASSWORD, seedDestinations, seedTours, seedUsers } from './data';
+import { MedicalFacility } from '../../modules/emergency/entities/medical-facility.entity';
+import {
+  SEED_PASSWORD,
+  seedDestinations,
+  seedFacilities,
+  seedTours,
+  seedUsers,
+} from './data';
 
 async function seed(ds: DataSource): Promise<void> {
   const passwordHash = await argon2.hash(SEED_PASSWORD);
@@ -157,6 +164,18 @@ async function seed(ds: DataSource): Promise<void> {
       }),
     );
     console.log(`+ booking ${b.ref} (${b.status})`);
+  }
+
+  // Emergency facilities (idempotent by name).
+  const facilityRepo = ds.getRepository(MedicalFacility);
+  for (const f of seedFacilities) {
+    const existing = await facilityRepo.findOne({ where: { name: f.name } });
+    if (existing) {
+      console.log(`= facility ${f.name} already present`);
+      continue;
+    }
+    await facilityRepo.save(facilityRepo.create(f));
+    console.log(`+ facility ${f.name} (${f.type})`);
   }
 }
 

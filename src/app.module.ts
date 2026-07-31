@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { DestinationsModule } from './modules/destinations/destinations.module';
+import { EmergencyModule } from './modules/emergency/emergency.module';
 import { ItinerariesModule } from './modules/itineraries/itineraries.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -32,6 +33,7 @@ import { UsersModule } from './modules/users/users.module';
     NotificationsModule,
     UploadsModule,
     ItinerariesModule,
+    EmergencyModule,
   ],
 })
 export class AppModule {}

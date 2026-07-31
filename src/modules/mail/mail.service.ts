@@ -43,6 +43,29 @@ export class MailService {
     });
   }
 
+  async sendSosAlert(
+    to: string,
+    input: {
+      travellerName: string;
+      contactName: string;
+      kind: string;
+      note?: string;
+      mapsLink: string;
+    },
+  ): Promise<void> {
+    await this.send({
+      to,
+      subject: `SOS: ${input.travellerName} needs help`,
+      html:
+        `<p>Hi ${input.contactName},</p>` +
+        `<p><strong>${input.travellerName}</strong> has triggered an emergency ` +
+        `alert (${input.kind}).</p>` +
+        (input.note ? `<p>Note: ${input.note}</p>` : '') +
+        `<p>Last known location: <a href="${input.mapsLink}">${input.mapsLink}</a></p>` +
+        `<p>Please try to reach them and contact local emergency services if needed.</p>`,
+    });
+  }
+
   private async send(input: {
     to: string;
     subject: string;

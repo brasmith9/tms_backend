@@ -1,5 +1,6 @@
 import { UserRole } from '../../modules/users/entities/user.entity';
 import { TourStatus } from '../../modules/tours/entities/tour.entity';
+import { FacilityType } from '../../modules/emergency/entities/medical-facility.entity';
 
 /** All seed accounts share this password. */
 export const SEED_PASSWORD = 'password123';
@@ -112,5 +113,81 @@ export const seedTours = [
     departureDaysFromNow: 14,
     capacity: 25,
     heroImageUrl: IMG('1564507592333-c60657eea523'),
+  },
+];
+
+/** Real Ghanaian emergency facilities for the M6 nearest-facility lookup. */
+export const seedFacilities = [
+  {
+    name: 'Korle Bu Teaching Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Ghana’s largest tertiary hospital, with 24/7 emergency care.',
+    lat: 5.5364,
+    lng: -0.226,
+    phone: '+233302674067',
+    open24h: true,
+  },
+  {
+    name: '37 Military Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Major Accra hospital with a 24-hour trauma centre.',
+    lat: 5.585,
+    lng: -0.183,
+    phone: '+233302776111',
+    open24h: true,
+  },
+  {
+    name: 'Greater Accra Regional Hospital (Ridge)',
+    type: FacilityType.HOSPITAL,
+    description: 'Central Accra regional hospital and emergency unit.',
+    lat: 5.56,
+    lng: -0.201,
+    phone: '+233302228382',
+    open24h: true,
+  },
+  {
+    name: 'Cape Coast Teaching Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Tertiary hospital serving the Central Region.',
+    lat: 5.115,
+    lng: -1.29,
+    phone: '+233332132400',
+    open24h: true,
+  },
+  {
+    name: 'Komfo Anokye Teaching Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Kumasi’s main tertiary hospital and trauma centre.',
+    lat: 6.697,
+    lng: -1.63,
+    phone: '+233322022308',
+    open24h: true,
+  },
+  {
+    name: 'Ghana Police Service HQ',
+    type: FacilityType.POLICE,
+    description: 'National police headquarters, Accra.',
+    lat: 5.55,
+    lng: -0.205,
+    phone: '191',
+    open24h: true,
+  },
+  {
+    name: 'Ghana National Fire Service HQ',
+    type: FacilityType.FIRE,
+    description: 'National fire service headquarters, Accra.',
+    lat: 5.558,
+    lng: -0.196,
+    phone: '192',
+    open24h: true,
+  },
+  {
+    name: 'U.S. Embassy Accra',
+    type: FacilityType.EMBASSY,
+    description: 'Consular assistance for U.S. citizens in Ghana.',
+    lat: 5.63,
+    lng: -0.172,
+    phone: '+233302741000',
+    open24h: false,
   },
 ];

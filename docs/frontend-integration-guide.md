@@ -437,6 +437,43 @@ server has no AI key configured.
 
 ---
 
+## 9b. Emergency (M6)
+
+Safety-critical. Facility and number lookups are **public (no auth)** so they work even with an
+expired token; SOS and contacts require auth.
+
+### Endpoints (`/api/v1`)
+
+| Method | Path | Auth | Query / Body | `data` |
+|---|---|---|---|---|
+| GET | `/emergency/facilities` | **public** | `lat?, lng?, radiusKm?, type?, country?` | **Facility[]** |
+| GET | `/emergency/contacts` | **public** | `country?` (default `GH`) | `{ label, number }[]` |
+| POST | `/emergency/sos` | any authed | `{ alertId (uuid), lat, lng, kind, note? }` | **Sos** |
+| GET | `/emergency/sos/:alertId` | owner | — | **Sos** |
+| POST | `/emergency/sos/:alertId/cancel` | owner | — | **Sos** |
+| GET | `/users/me/emergency-contacts` | any authed | — | **EmergencyContact[]** |
+| PUT | `/users/me/emergency-contacts` | any authed | `{ contacts: EmergencyContact[] }` (max 10) | **EmergencyContact[]** |
+
+```ts
+Facility = { id, name, type: 'HOSPITAL'|'CLINIC'|'PHARMACY'|'POLICE'|'FIRE'|'EMBASSY',
+             description, lat, lng, phone, open24h, distanceKm? /* present when lat/lng given */ }
+Sos      = { alertId, status: 'ACTIVE'|'CANCELLED'|'RESOLVED', kind: 'MEDICAL'|'SECURITY'|'FIRE'|'OTHER',
+             lat, lng, note?, notifiedContacts, createdAt, emergencyNumbers: {label,number}[] }
+EmergencyContact = { id, name, phone, email?, relationship? }
+```
+
+**Behaviour to rely on:**
+- `facilities` are returned **nearest-first with `distanceKm`** when you pass `lat`+`lng`; add
+  `radiusKm` to cap, `type` to filter (e.g. `type=EMBASSY` for "My Embassy"). Without lat/lng you
+  get the full list and no `distanceKm`.
+- **SOS is idempotent on `alertId`** — send a client-generated UUID; repeated taps return the same
+  alert and do not re-notify. It **never fails closed**: `emergencyNumbers` is always returned even
+  if contact notification breaks.
+- Contact notification is currently **email-only** (SMS/Twilio isn't wired), so only contacts with
+  an `email` are reached; `notifiedContacts` reflects how many. Quick Actions: **Call Ambulance** →
+  a number from `/emergency/contacts`; **Nearest Hospital** → top `facilities?type=HOSPITAL` hit;
+  **My Embassy** → `facilities?type=EMBASSY`.
+
 ## 10. Known gaps & gotchas (read before building)
 
 1. **Avatar upload** *(resolved)* — `POST /uploads/image` now accepts the TOURIST role, so the
