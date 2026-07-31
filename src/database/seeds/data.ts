@@ -25,6 +25,10 @@ export const seedUsers = [
   },
 ];
 
+/** Shared Unsplash sizing so every seeded image loads at a sensible resolution. */
+const IMG = (id: string) =>
+  `https://images.unsplash.com/photo-${id}?w=1200&q=80&auto=format&fit=crop`;
+
 export const seedDestinations = [
   {
     name: 'Cape Coast',
@@ -32,6 +36,7 @@ export const seedDestinations = [
     description: 'Historic coastal town home to Cape Coast Castle.',
     lat: 5.106,
     lng: -1.246,
+    heroImageUrl: IMG('1590523277543-a94d2e4eb00b'),
   },
   {
     name: 'Accra',
@@ -39,6 +44,7 @@ export const seedDestinations = [
     description: 'Ghana’s vibrant capital on the Atlantic coast.',
     lat: 5.6037,
     lng: -0.187,
+    heroImageUrl: IMG('1580060839134-75a5edca2e99'),
   },
   {
     name: 'Kumasi',
@@ -46,6 +52,7 @@ export const seedDestinations = [
     description: 'The cultural heart of the Ashanti Kingdom.',
     lat: 6.6885,
     lng: -1.6244,
+    heroImageUrl: IMG('1518495973542-4542c06a5843'),
   },
   {
     name: 'Mole National Park',
@@ -53,6 +60,7 @@ export const seedDestinations = [
     description: 'Ghana’s largest wildlife refuge, home to elephants.',
     lat: 9.26,
     lng: -1.85,
+    heroImageUrl: IMG('1516426122078-c23e76319801'),
   },
   {
     name: 'Elmina',
@@ -60,6 +68,7 @@ export const seedDestinations = [
     description: 'Fishing town famed for Elmina Castle.',
     lat: 5.0847,
     lng: -1.3506,
+    heroImageUrl: IMG('1507525428034-b723cf961d3e'),
   },
 ];
 
@@ -76,6 +85,7 @@ export const seedTours = [
     status: TourStatus.APPROVED,
     departureDaysFromNow: 30,
     capacity: 20,
+    heroImageUrl: IMG('1441974231531-c6227db76b6e'),
   },
   {
     slug: 'mole-safari-tour',
@@ -88,6 +98,7 @@ export const seedTours = [
     status: TourStatus.APPROVED,
     departureDaysFromNow: 45,
     capacity: 12,
+    heroImageUrl: IMG('1516426122078-c23e76319801'),
   },
   {
     slug: 'cape-coast-castle-tour',
@@ -100,5 +111,6 @@ export const seedTours = [
     status: TourStatus.APPROVED,
     departureDaysFromNow: 14,
     capacity: 25,
+    heroImageUrl: IMG('1564507592333-c60657eea523'),
   },
 ];

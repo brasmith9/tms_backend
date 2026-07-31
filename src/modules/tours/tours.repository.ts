@@ -47,6 +47,11 @@ export class ToursRepository {
       .createQueryBuilder('tour')
       .where('tour.status = :status', { status: TourStatus.APPROVED });
 
+    if (q.q) {
+      qb.andWhere('(tour.title ILIKE :q OR tour.description ILIKE :q)', {
+        q: `%${q.q}%`,
+      });
+    }
     if (q.destinationId) {
       qb.andWhere('tour.destination_id = :destinationId', {
         destinationId: q.destinationId,

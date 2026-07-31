@@ -51,6 +51,10 @@ async function seed(ds: DataSource): Promise<void> {
     if (!dest) {
       dest = await destRepo.save(destRepo.create(d));
       console.log(`+ destination ${d.name}`);
+    } else if (dest.heroImageUrl !== d.heroImageUrl) {
+      dest.heroImageUrl = d.heroImageUrl;
+      dest = await destRepo.save(dest);
+      console.log(`~ destination ${d.name} image backfilled`);
     } else {
       console.log(`= destination ${d.name} already present`);
     }
@@ -78,6 +82,7 @@ async function seed(ds: DataSource): Promise<void> {
           status: t.status,
           operatorId: operator.id,
           destinationId: dest.id,
+          heroImageUrl: t.heroImageUrl,
         }),
       );
       const departsAt = new Date(
@@ -93,7 +98,13 @@ async function seed(ds: DataSource): Promise<void> {
       departureByTourSlug.set(t.slug, departure);
       console.log(`+ tour ${t.slug} (+1 departure)`);
     } else {
-      console.log(`= tour ${t.slug} already present`);
+      if (tour.heroImageUrl !== t.heroImageUrl) {
+        tour.heroImageUrl = t.heroImageUrl;
+        tour = await tourRepo.save(tour);
+        console.log(`~ tour ${t.slug} image backfilled`);
+      } else {
+        console.log(`= tour ${t.slug} already present`);
+      }
       const existing = await departureRepo.findOne({
         where: { tourId: tour.id },
       });

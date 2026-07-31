@@ -4,6 +4,13 @@ import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 export class TourQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    description: 'Free-text search over title/description',
+  })
+  @IsOptional()
+  @IsString()
+  q?: string;
+
   @ApiPropertyOptional() @IsOptional() @IsUUID() destinationId?: string;
 
   @ApiPropertyOptional({ description: 'Min price in pesewas' })

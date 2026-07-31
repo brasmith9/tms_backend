@@ -23,7 +23,7 @@ import { StorageService } from './storage.service';
 @ApiTags('Uploads')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.OPERATOR, UserRole.ADMIN)
+@Roles(UserRole.TOURIST, UserRole.OPERATOR, UserRole.ADMIN)
 @Controller('uploads')
 export class UploadsController {
   constructor(private readonly storage: StorageService) {}
@@ -32,7 +32,7 @@ export class UploadsController {
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
-    summary: 'Upload an image to Cloudinary (operator/admin), returns its URL',
+    summary: 'Upload an image to Cloudinary (any authed role), returns its URL',
   })
   @ApiBody({
     schema: {
