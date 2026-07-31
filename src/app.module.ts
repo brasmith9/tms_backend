@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { DestinationsModule } from './modules/destinations/destinations.module';
 import { EmergencyModule } from './modules/emergency/emergency.module';
+import { FlightsModule } from './modules/flights/flights.module';
 import { FoodModule } from './modules/food/food.module';
 import { ItinerariesModule } from './modules/itineraries/itineraries.module';
 import { MailModule } from './modules/mail/mail.module';
@@ -40,6 +41,7 @@ import { UsersModule } from './modules/users/users.module';
     EmergencyModule,
     FoodModule,
     StaysModule,
+    FlightsModule,
   ],
 })
 export class AppModule {}
