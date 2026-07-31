@@ -5,6 +5,7 @@ export const RIDE_DRIVER_MOVED = 'ride.driver_moved';
 
 export interface RideStatusChangedEvent {
   rideId: string;
+  userId: string;
   status: RideStatus;
   changedAt: string;
 }

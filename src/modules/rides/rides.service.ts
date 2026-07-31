@@ -229,6 +229,7 @@ export class RidesService {
   private emitStatus(ride: Ride): void {
     this.events.emit(RIDE_STATUS_CHANGED, {
       rideId: ride.id,
+      userId: ride.userId,
       status: ride.status,
       changedAt: new Date().toISOString(),
     } satisfies RideStatusChangedEvent);
