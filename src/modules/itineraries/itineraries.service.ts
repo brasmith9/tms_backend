@@ -44,7 +44,9 @@ export class ItinerariesService {
       destination: dto.destination,
       days: dto.days,
       budgetMinor:
-        dto.budget === undefined ? undefined : cedisToPesewas(dto.budget),
+        dto.budgetMinor === undefined
+          ? undefined
+          : cedisToPesewas(dto.budgetMinor),
       partySize,
       interests,
       candidateTours,
@@ -59,7 +61,9 @@ export class ItinerariesService {
         destinationName: dto.destination,
         days: dto.days,
         budgetMinor:
-          dto.budget === undefined ? null : cedisToPesewas(dto.budget),
+          dto.budgetMinor === undefined
+            ? null
+            : cedisToPesewas(dto.budgetMinor),
         partySize,
         interests,
         plan,

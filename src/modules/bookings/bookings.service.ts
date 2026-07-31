@@ -208,13 +208,54 @@ export class BookingsService {
     if (!booking) {
       throw new NotFoundException(`Booking ${reference} not found`);
     }
+    this.assertCanView(booking, requester);
+    return booking;
+  }
+
+  private assertCanView(booking: TourBooking, requester: AuthUser): void {
     const isOwner = booking.touristId === requester.id;
     const isPrivileged =
       requester.role === UserRole.ADMIN || requester.role === UserRole.OPERATOR;
     if (!isOwner && !isPrivileged) {
       throw new ForbiddenException('Not permitted to view this booking');
     }
-    return booking;
+  }
+
+  /**
+   * Unified detail lookup mirroring `findMineTrips`: resolves a reference
+   * against tour bookings first, then reservations (STY/FLT/TBL).
+   */
+  async findTripByReference(
+    reference: string,
+    requester: AuthUser,
+  ): Promise<TripResponseDto> {
+    const booking = await this.repo.findByReference(reference);
+    if (booking) {
+      this.assertCanView(booking, requester);
+      return this.toTourTrip(booking);
+    }
+    return TripResponseDto.fromReservation(
+      await this.reservations.findByReference(reference, requester),
+    );
+  }
+
+  /** Unified cancel: dispatches to the tour or reservation flow by reference. */
+  async cancelTrip(
+    reference: string,
+    userId: string,
+  ): Promise<TripResponseDto> {
+    const booking = await this.repo.findByReference(reference);
+    if (booking) {
+      return this.toTourTrip(await this.cancel(reference, userId));
+    }
+    return TripResponseDto.fromReservation(
+      await this.reservations.cancel(reference, userId),
+    );
+  }
+
+  private async toTourTrip(booking: TourBooking): Promise<TripResponseDto> {
+    const items = await this.resolveItems([booking]);
+    return TripResponseDto.fromTour(booking, items.get(booking.departureId));
   }
 
   /** Resolves the embedded tour summary for one or more bookings, in one query. */

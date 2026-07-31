@@ -1,0 +1,150 @@
+import { FacilityType } from '../../../modules/emergency/entities/medical-facility.entity';
+
+/**
+ * Real Ghanaian emergency facilities for the M6 nearest-facility lookup.
+ *
+ * Names and coordinates are accurate. The national short codes (191 police,
+ * 192 fire, 193 ambulance) are real. Switchboard numbers on the original eight
+ * entries are as published. Numbers on entries added later follow the correct
+ * regional dialling pattern but have not been individually verified — treat them
+ * as demo data, not as numbers to dial in an emergency.
+ */
+export const seedFacilities = [
+  {
+    name: 'Korle Bu Teaching Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Ghana’s largest tertiary hospital, with 24/7 emergency care.',
+    lat: 5.5364,
+    lng: -0.226,
+    phone: '+233302674067',
+    open24h: true,
+  },
+  {
+    name: '37 Military Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Major Accra hospital with a 24-hour trauma centre.',
+    lat: 5.585,
+    lng: -0.183,
+    phone: '+233302776111',
+    open24h: true,
+  },
+  {
+    name: 'Greater Accra Regional Hospital (Ridge)',
+    type: FacilityType.HOSPITAL,
+    description: 'Central Accra regional hospital and emergency unit.',
+    lat: 5.56,
+    lng: -0.201,
+    phone: '+233302228382',
+    open24h: true,
+  },
+  {
+    name: 'Cape Coast Teaching Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Tertiary hospital serving the Central Region.',
+    lat: 5.115,
+    lng: -1.29,
+    phone: '+233332132400',
+    open24h: true,
+  },
+  {
+    name: 'Komfo Anokye Teaching Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Kumasi’s main tertiary hospital and trauma centre.',
+    lat: 6.697,
+    lng: -1.63,
+    phone: '+233322022308',
+    open24h: true,
+  },
+  {
+    name: 'Ghana Police Service HQ',
+    type: FacilityType.POLICE,
+    description: 'National police headquarters, Accra.',
+    lat: 5.55,
+    lng: -0.205,
+    phone: '191',
+    open24h: true,
+  },
+  {
+    name: 'Ghana National Fire Service HQ',
+    type: FacilityType.FIRE,
+    description: 'National fire service headquarters, Accra.',
+    lat: 5.558,
+    lng: -0.196,
+    phone: '192',
+    open24h: true,
+  },
+  {
+    name: 'U.S. Embassy Accra',
+    type: FacilityType.EMBASSY,
+    description: 'Consular assistance for U.S. citizens in Ghana.',
+    lat: 5.63,
+    lng: -0.172,
+    phone: '+233302741000',
+    open24h: false,
+  },
+  {
+    name: 'Tamale Teaching Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Tertiary referral hospital for the five northern regions.',
+    lat: 9.4075,
+    lng: -0.8533,
+    phone: '+233372022454',
+    open24h: true,
+  },
+  {
+    name: 'Ho Teaching Hospital',
+    type: FacilityType.HOSPITAL,
+    description:
+      'Volta Region teaching hospital with a 24-hour emergency unit.',
+    lat: 6.6112,
+    lng: 0.4772,
+    phone: '+233362028181',
+    open24h: true,
+  },
+  {
+    name: 'Effia Nkwanta Regional Hospital',
+    type: FacilityType.HOSPITAL,
+    description: 'Western Region referral hospital in Sekondi-Takoradi.',
+    lat: 4.9264,
+    lng: -1.7594,
+    phone: '+233312046303',
+    open24h: true,
+  },
+  {
+    name: 'Nyaho Medical Centre',
+    type: FacilityType.CLINIC,
+    description:
+      'Private multi-specialty clinic in Airport Residential, Accra.',
+    lat: 5.6011,
+    lng: -0.1846,
+    phone: '+233302508881',
+    open24h: true,
+  },
+  {
+    name: 'Ernest Chemists Pharmacy, Osu',
+    type: FacilityType.PHARMACY,
+    description: 'Well-stocked pharmacy chain branch on Oxford Street, Osu.',
+    lat: 5.5578,
+    lng: -0.1817,
+    phone: '+233302760001',
+    open24h: false,
+  },
+  {
+    name: 'British High Commission Accra',
+    type: FacilityType.EMBASSY,
+    description: 'Consular assistance for British nationals in Ghana.',
+    lat: 5.5747,
+    lng: -0.1856,
+    phone: '+233302213250',
+    open24h: false,
+  },
+  {
+    name: 'Ashanti Regional Police Command',
+    type: FacilityType.POLICE,
+    description: 'Regional police headquarters in central Kumasi.',
+    lat: 6.6912,
+    lng: -1.6183,
+    phone: '191',
+    open24h: true,
+  },
+];

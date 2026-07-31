@@ -6,7 +6,7 @@ import { NotificationsService } from './notifications.service';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
-  let repo: jest.Mocked<Repository<Notification>>;
+  let repo: Record<string, jest.Mock>;
   let events: { emit: jest.Mock };
 
   beforeEach(() => {
@@ -19,10 +19,10 @@ describe('NotificationsService', () => {
       findAndCount: jest.fn(),
       count: jest.fn().mockResolvedValue(0),
       update: jest.fn().mockResolvedValue({ affected: 3 }),
-    } as unknown as jest.Mocked<Repository<Notification>>;
+    };
     events = { emit: jest.fn() };
     service = new NotificationsService(
-      repo,
+      repo as unknown as Repository<Notification>,
       events as unknown as EventEmitter2,
     );
   });

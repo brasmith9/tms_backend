@@ -1,0 +1,103 @@
+import { IMG, PHOTO } from './shared';
+
+export const seedDestinations = [
+  {
+    name: 'Cape Coast',
+    region: 'Central Region',
+    description: 'Historic coastal town home to Cape Coast Castle.',
+    lat: 5.106,
+    lng: -1.246,
+    heroImageUrl: IMG(PHOTO.coast),
+  },
+  {
+    name: 'Accra',
+    region: 'Greater Accra',
+    description: 'Ghana’s vibrant capital on the Atlantic coast.',
+    lat: 5.6037,
+    lng: -0.187,
+    heroImageUrl: IMG(PHOTO.city),
+  },
+  {
+    name: 'Kumasi',
+    region: 'Ashanti Region',
+    description: 'The cultural heart of the Ashanti Kingdom.',
+    lat: 6.6885,
+    lng: -1.6244,
+    heroImageUrl: IMG(PHOTO.market),
+  },
+  {
+    name: 'Mole National Park',
+    region: 'Savannah Region',
+    description: 'Ghana’s largest wildlife refuge, home to elephants.',
+    lat: 9.26,
+    lng: -1.85,
+    heroImageUrl: IMG(PHOTO.savannah),
+  },
+  {
+    name: 'Elmina',
+    region: 'Central Region',
+    description: 'Fishing town famed for Elmina Castle.',
+    lat: 5.0847,
+    lng: -1.3506,
+    heroImageUrl: IMG(PHOTO.beach),
+  },
+  {
+    name: 'Ho',
+    region: 'Volta Region',
+    description:
+      'Volta regional capital ringed by mountains and craft villages.',
+    lat: 6.6009,
+    lng: 0.4713,
+    heroImageUrl: IMG(PHOTO.forest),
+  },
+  {
+    name: 'Busua',
+    region: 'Western Region',
+    description: 'Laid-back surf beach on Ghana’s western shoreline.',
+    lat: 4.7936,
+    lng: -1.9339,
+    heroImageUrl: IMG(PHOTO.beach),
+  },
+  {
+    name: 'Wli Falls',
+    region: 'Volta Region',
+    description:
+      'West Africa’s tallest waterfall, set in the Agumatsa reserve.',
+    lat: 7.1213,
+    lng: 0.5983,
+    heroImageUrl: IMG(PHOTO.forest),
+  },
+  {
+    name: 'Ada Foah',
+    region: 'Greater Accra',
+    description: 'Estuary town where the Volta River meets the Atlantic.',
+    lat: 5.7833,
+    lng: 0.6333,
+    heroImageUrl: IMG(PHOTO.coast),
+  },
+  {
+    name: 'Tamale',
+    region: 'Northern Region',
+    description: 'Northern hub for savannah culture, crafts and cuisine.',
+    lat: 9.4008,
+    lng: -0.8393,
+    heroImageUrl: IMG(PHOTO.savannah),
+  },
+  {
+    name: 'Axim',
+    region: 'Western Region',
+    description:
+      'Palm-lined beaches beneath the 17th-century Fort San Antonio.',
+    lat: 4.8699,
+    lng: -2.2405,
+    heroImageUrl: IMG(PHOTO.beach),
+  },
+  {
+    name: 'Nzulezo',
+    region: 'Western Region',
+    description: 'Stilt village built entirely over Lake Tadane.',
+    lat: 5.0167,
+    lng: -2.5833,
+    heroImageUrl: IMG(PHOTO.forest),
+  },
+];

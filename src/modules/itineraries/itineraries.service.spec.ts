@@ -130,7 +130,7 @@ describe('ItinerariesService', () => {
     await service.generate('user-1', {
       destination: 'Cape Coast',
       days: 2,
-      budget: 3000.5,
+      budgetMinor: 3000.5,
       partySize: 3,
       interests: ['history'],
     });

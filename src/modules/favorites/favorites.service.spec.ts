@@ -7,18 +7,17 @@ import { Tour } from '../tours/entities/tour.entity';
 import { Favorite, FavoriteType } from './entities/favorite.entity';
 import { FavoritesService } from './favorites.service';
 
-const repoMock = () =>
-  ({
-    create: jest.fn((x: unknown) => x),
-    save: jest.fn((x: Favorite) => Promise.resolve({ id: 'f1', ...x })),
-    findOne: jest.fn(),
-    findAndCount: jest.fn(),
-    remove: jest.fn(),
-  }) as unknown as jest.Mocked<Repository<Favorite>>;
+const repoMock = (): Record<string, jest.Mock> => ({
+  create: jest.fn((x: unknown) => x),
+  save: jest.fn((x: Favorite) => Promise.resolve({ id: 'f1', ...x })),
+  findOne: jest.fn(),
+  findAndCount: jest.fn(),
+  remove: jest.fn(),
+});
 
 describe('FavoritesService', () => {
   let service: FavoritesService;
-  let favorites: jest.Mocked<Repository<Favorite>>;
+  let favorites: Record<string, jest.Mock>;
   let tours: { findOne: jest.Mock };
   let stays: { findOne: jest.Mock };
   let restaurants: { findOne: jest.Mock };
@@ -31,7 +30,7 @@ describe('FavoritesService', () => {
     restaurants = { findOne: jest.fn() };
     destinations = { findOne: jest.fn() };
     service = new FavoritesService(
-      favorites,
+      favorites as unknown as Repository<Favorite>,
       tours as unknown as Repository<Tour>,
       stays as unknown as Repository<Stay>,
       restaurants as unknown as Repository<Restaurant>,

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Driver } from './entities/driver.entity';
 import { Ride } from './entities/ride.entity';
 import { RideQuote } from './entities/ride-quote.entity';

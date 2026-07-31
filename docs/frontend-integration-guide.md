@@ -254,8 +254,8 @@ Posting a review updates the tour's `ratingAvg`/`ratingCount`.
 |---|---|---|---|---|
 | POST | `/bookings` | TOURIST | `{ departureId, seats (1–20) }` | **Booking** (status `PENDING`, tour only) |
 | GET | `/bookings/me` | any authed | query: `page,limit,status?,type?` | paginated **Trip** (unified) |
-| GET | `/bookings/:reference` | owner | — | **Booking** (tour) |
-| POST | `/bookings/:reference/cancel` | TOURIST | — | **Booking** (status `CANCELLED`) |
+| GET | `/bookings/:reference` | owner | — | **Trip** (unified) |
+| POST | `/bookings/:reference/cancel` | TOURIST | — | **Trip** (status `CANCELLED`) |
 
 **`GET /bookings/me` is the unified trips feed** — it merges tour bookings *and* reservations
 (stays/flights/tables) into one list. Each entry:
@@ -268,9 +268,14 @@ Trip = { reference, itemType: 'TOUR'|'STAY'|'FLIGHT'|'TABLE', status, total /* d
 
 Filter with `status` (`upcoming` = PENDING/CONFIRMED · `completed` · `cancelled`) and/or `type`
 (`TOUR`/`STAY`/`FLIGHT`/`TABLE`). The embedded `item` means the list renders in one call — no
-per-booking lookups. `POST /bookings` and `GET/cancel /bookings/:reference` remain **tour-specific**;
-non-tour reservations are created by their module (e.g. Food) and managed at
-`GET` / `POST /reservations/:reference/cancel`.
+per-booking lookups.
+
+`GET /bookings/:reference` and `POST /bookings/:reference/cancel` are **unified too** — they resolve
+the reference against tour bookings first, then reservations, and return the same **Trip** shape as
+the list. So a `reference` taken straight from `GET /bookings/me` works on both, whatever its
+`itemType`. `POST /bookings` remains **tour-specific**: non-tour reservations are created by their
+own module (e.g. Food, Stays, Flights). `GET` / `POST /reservations/:reference/cancel` still exist
+and return the narrower **Reservation** shape.
 
 ### Payments (`/api/v1/payments`)
 
