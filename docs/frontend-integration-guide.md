@@ -6,11 +6,12 @@ real-time WebSocket contracts, and the AI itinerary engine. Give this file to yo
 context.
 
 > Scope note: implemented today — **Tours & Booking**, **Emergency (M6)**, **Food (M4)**, and
-> **Hotels/Stays (M3)**, and **Flights (M2)** — plus auth, profiles, payments, reviews, uploads,
-> real-time notifications, and an AI itinerary planner. Bookings are **unified**: `GET /bookings/me`
-> returns tours and reservations in one feed (see §6 Bookings). Paid reservations (stays, flights)
-> settle through the same `POST /payments/initiate` as tours. Still **not** implemented: Transport,
-> and the cross-cutting Favourites / Notifications-API / Reference-data services.
+> **Hotels/Stays (M3)**, **Flights (M2)**, and **Transport (M5, live-tracked rides)** — plus auth,
+> profiles, payments, reviews, uploads, real-time notifications, and an AI itinerary planner. All
+> five tourism verticals are live. Bookings are **unified**: `GET /bookings/me` returns tours and
+> reservations in one feed (see §6 Bookings). Paid reservations (stays, flights) settle through the
+> same `POST /payments/initiate` as tours. Still **not** implemented: the cross-cutting Favourites /
+> Notifications-API / Reference-data services.
 
 ---
 
@@ -573,6 +574,41 @@ Notes:
 - `tripType` accepts `ONE_WAY|RETURN|MULTI_CITY`, but search currently prices the **outbound** slice
   (`origin`→`destination` on `date`); return/multi-city pairing is a documented follow-up.
 
+## 9f. Transport (M5 — live-tracked rides)
+
+A ride is a **stateful resource with a live socket**, not a pay-upfront booking. All endpoints
+require auth.
+
+| Method | Path | Auth | Query / Body | `data` |
+|---|---|---|---|---|
+| POST | `/rides/quote` | any authed | `{ vehicleType, pickup:{lat,lng,label}, dropoff:{…}, scheduledAt? }` | `{ quoteId, fare, currency, etaMinutes, surgeMultiplier, expiresAt }` |
+| GET | `/rides/drivers/nearby` | any authed | `lat, lng, vehicleType?` | **NearbyDriver[]** (ETA-sorted) |
+| POST | `/rides` | TOURIST | `{ quoteId }` | **Ride** (assigns a driver → `DRIVER_ASSIGNED`) |
+| GET | `/rides/me` | any authed | `status?` | **Ride[]** |
+| GET | `/rides/:id` | owner | — | **Ride** |
+| POST | `/rides/:id/cancel` | owner | — | **Ride** (`CANCELLED`) |
+
+```ts
+Ride = { id, status: 'REQUESTED'|'DRIVER_ASSIGNED'|'ARRIVING'|'IN_PROGRESS'|'COMPLETED'|'CANCELLED',
+         vehicleType: 'TAXI'|'CAR_HIRE'|'SHUTTLE'|'BUS', pickup, dropoff: {lat,lng,label},
+         fare /* decimal GHS */, currency, etaMinutes?,
+         driver?: { id, name, phone /* tel: link */, rating, vehicle:{make,model,plate,color} },
+         driverLocation?: { lat, lng }, createdAt }
+NearbyDriver = { id, name, rating, etaMinutes, lat, lng, vehicle:{make,model,plate,color} }
+```
+
+**Flow & realtime:**
+1. `POST /rides/quote` → a fare estimate (fare = base + per-km by `vehicleType`), valid ~10 min.
+2. `POST /rides { quoteId }` creates the ride and **dispatches the nearest available driver**
+   (`DRIVER_ASSIGNED`). One active ride per user (`409` otherwise); expired quote → `400`.
+3. **Open the `/rides` socket and `ride.subscribe { rideId }`** to receive `ride.status_changed` and
+   throttled `ride.driver_moved` (`{ lat, lng, bearing, etaMinutes }`) — this drives the active-ride
+   map. The ride advances `DRIVER_ASSIGNED → ARRIVING → IN_PROGRESS → COMPLETED` on its own (see §8
+   and `docs/websocket-events.md`).
+- **Chat is out of scope**; use the driver's `phone` for a `tel:` link. **Payment is
+  settle-after-completion** — the ride records its `fare` on `COMPLETED`; there is no upfront charge
+  and no online capture wired (no saved card), which is the current documented scope.
+
 ## 10. Known gaps & gotchas (read before building)
 
 1. **Avatar upload** *(resolved)* — `POST /uploads/image` now accepts the TOURIST role, so the
@@ -580,8 +616,8 @@ Notes:
    `avatarUrl`.
 2. **AI is synchronous and can be slow.** Reiterating §9: no streaming; budget for ~75s on the
    current free model and show a spinner. Ask the backend team to switch to a faster model for demos.
-3. **Not every vertical exists yet.** Tours, Emergency, Food, Hotels/Stays, and Flights are live;
-   **Transport is not** — don't build UI expecting those endpoints.
+3. **All five verticals are live** (Tours, Emergency, Food, Hotels/Stays, Flights, Transport). Not
+   built: the cross-cutting **Favourites**, **Notifications API**, and **Reference-data** services.
 4. **Money is decimal GHS on the API.** Send/read `price`/`total`/`amount`/`budget` as decimal
    numbers (≤2 dp); more than 2 decimals is rejected with a 400. (Internally it's pesewas, but you
    never see that.)
@@ -612,3 +648,5 @@ Notes:
 | Stay category | `HOTEL`, `VILLA`, `HOSTEL`, `APARTMENT` |
 | Flight cabin | `ECONOMY`, `PREMIUM_ECONOMY`, `BUSINESS`, `FIRST` |
 | Flight tripType | `ONE_WAY`, `RETURN`, `MULTI_CITY` |
+| Ride vehicleType | `TAXI`, `CAR_HIRE`, `SHUTTLE`, `BUS` |
+| Ride status | `REQUESTED`, `DRIVER_ASSIGNED`, `ARRIVING`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
