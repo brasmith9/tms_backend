@@ -21,6 +21,7 @@ import {
   BookingCancelledEvent,
   BookingStatusChangedEvent,
 } from './booking-events';
+import { BookingItem } from './booking-item';
 import { BookingsRepository } from './bookings.repository';
 import { BookingQueryDto } from './dto/booking-query.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -218,6 +219,11 @@ export class BookingsService {
       take,
     );
     return paginate(data, total, q);
+  }
+
+  /** Resolves the embedded tour summary for one or more bookings, in one query. */
+  resolveItems(bookings: TourBooking[]): Promise<Map<string, BookingItem>> {
+    return this.repo.itemsForDepartures(bookings.map((b) => b.departureId));
   }
 
   /** Cancel unpaid PENDING bookings past the seat-hold window. Returns the count. */

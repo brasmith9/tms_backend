@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
 import { BookingTab } from './dto/booking-query.dto';
+import { BookingItem } from './booking-item';
 import { BookingStatus, TourBooking } from './entities/tour-booking.entity';
 
 const LIVE = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
@@ -69,7 +70,9 @@ export class BookingsRepository {
   ): Promise<[TourBooking[], number]> {
     const qb = this.repo
       .createQueryBuilder('b')
-      .leftJoin('tour_departures', 'd', 'd.id = b.departure_id')
+      // tour_bookings.departure_id is varchar while tour_departures.id is uuid,
+      // so the join needs an explicit cast to compare them.
+      .leftJoin('tour_departures', 'd', 'd.id::text = b.departure_id')
       .where('b.tourist_id = :touristId', { touristId });
 
     if (tab === 'upcoming') {
@@ -85,6 +88,46 @@ export class BookingsRepository {
 
     qb.orderBy('b.created_at', 'DESC').skip(skip).take(take);
     return qb.getManyAndCount();
+  }
+
+  /** Resolves a display summary of the tour behind each departure, in one query. */
+  async itemsForDepartures(
+    departureIds: string[],
+  ): Promise<Map<string, BookingItem>> {
+    const map = new Map<string, BookingItem>();
+    if (departureIds.length === 0) return map;
+
+    const rows = await this.repo.manager
+      .createQueryBuilder()
+      .select('d.id::text', 'departureId')
+      .addSelect('d.departs_at', 'departsAt')
+      .addSelect('t.id::text', 'tourId')
+      .addSelect('t.slug', 'slug')
+      .addSelect('t.title', 'title')
+      .addSelect('t.hero_image_url', 'heroImageUrl')
+      .from('tour_departures', 'd')
+      // tour_departures.tour_id is varchar while tours.id is uuid.
+      .innerJoin('tours', 't', 't.id::text = d.tour_id')
+      .where('d.id IN (:...ids)', { ids: departureIds })
+      .getRawMany<{
+        departureId: string;
+        departsAt: Date;
+        tourId: string;
+        slug: string;
+        title: string;
+        heroImageUrl: string | null;
+      }>();
+
+    for (const r of rows) {
+      map.set(r.departureId, {
+        id: r.tourId,
+        slug: r.slug,
+        title: r.title,
+        imageUrl: r.heroImageUrl ?? undefined,
+        startsAt: r.departsAt.toISOString(),
+      });
+    }
+    return map;
   }
 
   findExpiredPending(

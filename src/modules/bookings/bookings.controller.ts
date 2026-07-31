@@ -18,6 +18,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { BookingQueryDto } from './dto/booking-query.dto';
 import { BookingResponseDto } from './dto/booking-response.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { TourBooking } from './entities/tour-booking.entity';
 import { BookingsService } from './bookings.service';
 
 @ApiTags('Bookings')
@@ -35,7 +36,7 @@ export class BookingsController {
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateBookingDto,
   ): Promise<BookingResponseDto> {
-    return BookingResponseDto.from(await this.bookings.create(user.id, dto));
+    return this.withItem(await this.bookings.create(user.id, dto));
   }
 
   @Get('me')
@@ -43,9 +44,12 @@ export class BookingsController {
   @ApiPaginatedResponse(BookingResponseDto)
   async mine(@CurrentUser() user: AuthUser, @Query() q: BookingQueryDto) {
     const page = await this.bookings.findMine(user.id, q);
+    const items = await this.bookings.resolveItems(page.results);
     return {
       ...page,
-      results: page.results.map((b) => BookingResponseDto.from(b)),
+      results: page.results.map((b) =>
+        BookingResponseDto.from(b, items.get(b.departureId)),
+      ),
     };
   }
 
@@ -55,9 +59,7 @@ export class BookingsController {
     @CurrentUser() user: AuthUser,
     @Param('reference') reference: string,
   ): Promise<BookingResponseDto> {
-    return BookingResponseDto.from(
-      await this.bookings.findByReference(reference, user),
-    );
+    return this.withItem(await this.bookings.findByReference(reference, user));
   }
 
   @Post(':reference/cancel')
@@ -68,8 +70,12 @@ export class BookingsController {
     @CurrentUser() user: AuthUser,
     @Param('reference') reference: string,
   ): Promise<BookingResponseDto> {
-    return BookingResponseDto.from(
-      await this.bookings.cancel(reference, user.id),
-    );
+    return this.withItem(await this.bookings.cancel(reference, user.id));
+  }
+
+  /** Attaches the embedded tour summary to a single booking response. */
+  private async withItem(booking: TourBooking): Promise<BookingResponseDto> {
+    const items = await this.bookings.resolveItems([booking]);
+    return BookingResponseDto.from(booking, items.get(booking.departureId));
   }
 }

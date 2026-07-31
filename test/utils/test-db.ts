@@ -43,6 +43,12 @@ export async function bootstrapTestApp(
   configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder,
 ): Promise<INestApplication> {
   process.env.NODE_ENV = 'test';
+  // Point the app at the throwaway test database BEFORE the config module loads
+  // its .env — in test mode DatabaseModule drops the schema each boot, so it must
+  // never run against the dev database. dotenv does not override an already-set var.
+  process.env.DATABASE_URL =
+    process.env.TEST_DATABASE_URL ??
+    'postgres://voyago:voyago@localhost:5545/voyago_test';
   let builder = Test.createTestingModule({ imports: [AppModule] });
   if (configure) builder = configure(builder);
   const moduleRef = await builder.compile();
