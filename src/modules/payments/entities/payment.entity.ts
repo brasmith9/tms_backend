@@ -14,10 +14,18 @@ export enum PaymentStatus {
   REFUNDED = 'REFUNDED',
 }
 
+/** Which kind of booking a payment settles, so the webhook confirms the right one. */
+export enum PaymentSource {
+  TOUR = 'TOUR',
+  RESERVATION = 'RESERVATION',
+}
+
 @Entity('payments')
 export class Payment {
   @PrimaryGeneratedColumn('uuid') id!: string;
   @Index() @Column({ name: 'booking_id' }) bookingId!: string;
+  @Column({ type: 'enum', enum: PaymentSource, default: PaymentSource.TOUR })
+  source!: PaymentSource;
   @Column({ name: 'provider_ref', unique: true }) providerRef!: string;
   @Column({ name: 'amount_minor', type: 'int' }) amountMinor!: number;
   @Column({ default: 'GHS' }) currency!: string;

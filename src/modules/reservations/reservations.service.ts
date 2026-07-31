@@ -9,7 +9,9 @@ import { DataSource, EntityManager, QueryFailedError } from 'typeorm';
 import { UserRole } from '../users/entities/user.entity';
 import type { AuthUser } from '../auth/auth-user.type';
 import {
+  BOOKING_CANCELLED,
   BOOKING_STATUS_CHANGED,
+  BookingCancelledEvent,
   BookingStatusChangedEvent,
 } from '../bookings/booking-events';
 import {
@@ -90,6 +92,11 @@ export class ReservationsService {
     reservation.cancelledAt = new Date();
     const saved = await this.repo.save(reservation);
     this.notifyStatusChanged(saved);
+    // Refund is a no-op for free reservations (no payment row exists).
+    this.events.emit(BOOKING_CANCELLED, {
+      bookingId: saved.id,
+      reference: saved.reference,
+    } satisfies BookingCancelledEvent);
     return saved;
   }
 
