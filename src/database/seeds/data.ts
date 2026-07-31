@@ -191,3 +191,117 @@ export const seedFacilities = [
     open24h: false,
   },
 ];
+
+/** Open every day 11:00–22:00 UTC. */
+const ALL_WEEK = [0, 1, 2, 3, 4, 5, 6].map((day) => ({
+  day,
+  opens: '11:00',
+  closes: '22:00',
+}));
+
+export const seedRestaurants = [
+  {
+    slug: 'buka-restaurant-osu',
+    name: 'Buka Restaurant',
+    cuisine: 'Ghanaian',
+    priceTier: 2,
+    description: 'Beloved Osu spot for jollof, banku and grilled tilapia.',
+    lat: 5.5571,
+    lng: -0.182,
+    heroImageUrl: IMG('1517248135467-4c7edcad34c4'),
+    images: [IMG('1517248135467-4c7edcad34c4')],
+    dietary: ['HALAL'],
+    openingHours: ALL_WEEK,
+    menu: [
+      {
+        category: 'Mains',
+        items: [
+          { name: 'Jollof with grilled chicken', priceMinor: 7500 },
+          { name: 'Banku with tilapia', priceMinor: 9000 },
+          { name: 'Waakye special', priceMinor: 6000 },
+        ],
+      },
+      {
+        category: 'Drinks',
+        items: [
+          { name: 'Sobolo (hibiscus)', priceMinor: 1500 },
+          { name: 'Fresh coconut', priceMinor: 1200 },
+        ],
+      },
+    ],
+    ratingAvg: 4.6,
+    ratingCount: 128,
+  },
+  {
+    slug: 'santoku-accra',
+    name: 'Santoku',
+    cuisine: 'Japanese',
+    priceTier: 4,
+    description: 'Upscale Japanese dining at Villaggio, Airport Residential.',
+    lat: 5.6182,
+    lng: -0.174,
+    heroImageUrl: IMG('1414235077428-338989a2e8c0'),
+    images: [IMG('1414235077428-338989a2e8c0')],
+    dietary: ['VEGETARIAN', 'GLUTEN_FREE'],
+    openingHours: ALL_WEEK,
+    menu: [
+      {
+        category: 'Sushi',
+        items: [
+          { name: 'Salmon nigiri (2 pcs)', priceMinor: 9000 },
+          { name: 'Dragon roll', priceMinor: 16000 },
+        ],
+      },
+    ],
+    ratingAvg: 4.8,
+    ratingCount: 76,
+  },
+  {
+    slug: 'zen-garden-accra',
+    name: 'Zen Garden',
+    cuisine: 'Asian Fusion',
+    priceTier: 3,
+    description: 'Garden setting with pan-Asian and vegetarian plates.',
+    lat: 5.6205,
+    lng: -0.1712,
+    heroImageUrl: IMG('1552566626-52f8b828add9'),
+    images: [IMG('1552566626-52f8b828add9')],
+    dietary: ['VEGETARIAN', 'VEGAN'],
+    openingHours: ALL_WEEK,
+    menu: [
+      {
+        category: 'Plates',
+        items: [
+          { name: 'Pad thai (veg)', priceMinor: 8500 },
+          { name: 'Tofu curry', priceMinor: 8000 },
+        ],
+      },
+    ],
+    ratingAvg: 4.5,
+    ratingCount: 54,
+  },
+  {
+    slug: 'coco-lounge-cape-coast',
+    name: 'Coco Lounge',
+    cuisine: 'Continental',
+    priceTier: 3,
+    description: 'Seafront continental dining near Cape Coast Castle.',
+    lat: 5.104,
+    lng: -1.248,
+    heroImageUrl: IMG('1555396273-367ea4eb4db5'),
+    images: [IMG('1555396273-367ea4eb4db5')],
+    dietary: ['GLUTEN_FREE'],
+    openingHours: ALL_WEEK,
+    menu: [
+      {
+        category: 'Mains',
+        items: [
+          { name: 'Grilled lobster', priceMinor: 22000 },
+          { name: 'Beef burger & fries', priceMinor: 9500 },
+        ],
+      },
+    ],
+    ratingAvg: 4.3,
+    ratingCount: 41,
+  },
+];

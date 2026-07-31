@@ -12,10 +12,12 @@ import {
   BookingStatus,
 } from '../../modules/bookings/entities/tour-booking.entity';
 import { MedicalFacility } from '../../modules/emergency/entities/medical-facility.entity';
+import { Restaurant } from '../../modules/food/entities/restaurant.entity';
 import {
   SEED_PASSWORD,
   seedDestinations,
   seedFacilities,
+  seedRestaurants,
   seedTours,
   seedUsers,
 } from './data';
@@ -176,6 +178,18 @@ async function seed(ds: DataSource): Promise<void> {
     }
     await facilityRepo.save(facilityRepo.create(f));
     console.log(`+ facility ${f.name} (${f.type})`);
+  }
+
+  // Restaurants (idempotent by slug).
+  const restaurantRepo = ds.getRepository(Restaurant);
+  for (const r of seedRestaurants) {
+    const existing = await restaurantRepo.findOne({ where: { slug: r.slug } });
+    if (existing) {
+      console.log(`= restaurant ${r.slug} already present`);
+      continue;
+    }
+    await restaurantRepo.save(restaurantRepo.create(r));
+    console.log(`+ restaurant ${r.slug} (${r.cuisine})`);
   }
 }
 
