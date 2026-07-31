@@ -25,11 +25,11 @@ tests → seed → live verify), committed independently.
 | # | Work | Status |
 |---|------|--------|
 | 1 | Fix `GET /bookings/me` 500 | ✅ done (TOUR-025) |
-| 2 | Polymorphic `Booking` + embedded `item` | ⚠️ item embed done; generic Booking + payment generalisation pending (built with Food) |
+| 2 | Polymorphic `Booking` + embedded `item` | ✅ done (TOUR-029) — generic Reservation + unified /bookings/me; payment generalisation still pending (built with Hotels, the first paid reservation) |
 | 3 | Geo (`distanceKm`) + `q=` on `/tours` | ⚠️ `q=` done; haversine helper done; `/places/search` deferred (per-endpoint proximity used instead) |
 | 4 | **Emergency** | ✅ done (TOUR-027) — facilities (public, nearest-first), national numbers, idempotent SOS with contact notification + graceful degrade, emergency-contacts CRUD |
-| 5 | Food | ⬜ |
-| 6 | Hotels | ⬜ |
+| 5 | Food | ✅ done (TOUR-030) — restaurants, menus, availability, free table reservations |
+| 6 | Hotels | ⬜ next — first paid reservation; carries the payment generalisation |
 | 7 | Flights | ⬜ |
 | 8 | Transport | ⬜ |
 | + | Cross-cutting: Favourites, Notifications API, Reference data | ⬜ |

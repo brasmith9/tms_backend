@@ -5,9 +5,11 @@ backend. It covers the request/response conventions, authentication, every REST 
 real-time WebSocket contracts, and the AI itinerary engine. Give this file to your model/agent as
 context.
 
-> Scope note: this backend implements **one vertical end-to-end — Tours & Booking** — plus auth,
-> profiles, payments, reviews, uploads, real-time notifications, and an AI itinerary planner. Other
-> tourism verticals (flights, hotels, food, transport, emergency) are **not** implemented.
+> Scope note: implemented today — **Tours & Booking**, **Emergency (M6)**, and **Food (M4,
+> restaurants + table reservations)** — plus auth, profiles, payments, reviews, uploads, real-time
+> notifications, and an AI itinerary planner. Bookings are **unified**: `GET /bookings/me` returns
+> tours and reservations in one feed (see §6 Bookings). Still **not** implemented: Hotels/Stays,
+> Flights, Transport, and the cross-cutting Favourites / Notifications-API / Reference-data services.
 
 ---
 
@@ -148,7 +150,7 @@ Reused across endpoints (these are the `data` payloads, already unwrapped from t
 **Tour**
 ```ts
 { id: string, operatorId: string, destinationId: string, title: string, slug: string,
-  description: string, priceMinor: number, currency: 'GHS', durationMinutes: number,
+  description: string, price: number /* decimal GHS */, currency: 'GHS', durationMinutes: number,
   status: 'DRAFT'|'PENDING_REVIEW'|'APPROVED'|'SUSPENDED',
   heroImageUrl?: string, ratingAvg: number, ratingCount: number }
 ```
@@ -162,7 +164,7 @@ Reused across endpoints (these are the `data` payloads, already unwrapped from t
 **Booking**
 ```ts
 { reference: string /* e.g. "TUR-2026-0007" */, departureId: string, seats: number,
-  totalMinor: number, currency: 'GHS',
+  total: number /* decimal GHS */, currency: 'GHS',
   status: 'PENDING'|'CONFIRMED'|'CANCELLED'|'COMPLETED', createdAt: string /* ISO */,
   // Embedded tour summary so trips lists render without fetching each tour:
   item?: { id: string, slug: string, title: string, imageUrl?: string, startsAt?: string /* ISO */ } }
@@ -171,7 +173,7 @@ Reused across endpoints (these are the `data` payloads, already unwrapped from t
 **Payment**
 ```ts
 { providerRef: string, status: 'PENDING'|'PAID'|'FAILED'|'REFUNDED',
-  amountMinor: number, currency: string, authorizationUrl?: string }
+  amount: number /* decimal GHS */, currency: string, authorizationUrl?: string }
 ```
 
 **Review**
@@ -184,8 +186,9 @@ Reused across endpoints (these are the `data` payloads, already unwrapped from t
 
 ### Money
 
-All money is an **integer in minor units (pesewas)**. `priceMinor: 12000` means **GHS 120.00**.
-Divide by 100 for display. Currency is `GHS` throughout.
+All money on the API is a **decimal number of cedis**. `price: 150.5` means **GHS 150.50**.
+Send and read it as-is; format trailing zeros for display. Currency is `GHS` throughout.
+Values carry at most 2 decimal places — more is rejected with a 400.
 
 ---
 
@@ -221,7 +224,7 @@ must be a valid URL — see §9 for how to obtain one.
 |---|---|---|---|---|
 | GET | `/tours` | public | query: `page,limit,q?,destinationId?,minPrice?,maxPrice?,sort?` | paginated **Tour** (APPROVED only) |
 | GET | `/tours/:slug` | public | — | **Tour** (APPROVED only; by slug) |
-| POST | `/tours` | OPERATOR | `{ title, destinationId, description, priceMinor, durationMinutes, heroImageUrl? }` | **Tour** (status `DRAFT`) |
+| POST | `/tours` | OPERATOR | `{ title, destinationId, description, price, durationMinutes, heroImageUrl? }` | **Tour** (status `DRAFT`) |
 | PATCH | `/tours/:id` | OPERATOR + owner | partial (not `destinationId`) | **Tour** |
 | POST | `/tours/:id/submit` | OPERATOR + owner | — | **Tour** (→ `PENDING_REVIEW`) |
 | POST | `/tours/:id/approve` | ADMIN | — | **Tour** (→ `APPROVED`) |
@@ -247,15 +250,25 @@ Posting a review updates the tour's `ratingAvg`/`ratingCount`.
 
 | Method | Path | Auth | Body / Query | `data` |
 |---|---|---|---|---|
-| POST | `/bookings` | TOURIST | `{ departureId, seats (1–20) }` | **Booking** (status `PENDING`) |
-| GET | `/bookings/me` | any authed | query: `page,limit,status?` | paginated **Booking** |
-| GET | `/bookings/:reference` | owner | — | **Booking** |
+| POST | `/bookings` | TOURIST | `{ departureId, seats (1–20) }` | **Booking** (status `PENDING`, tour only) |
+| GET | `/bookings/me` | any authed | query: `page,limit,status?,type?` | paginated **Trip** (unified) |
+| GET | `/bookings/:reference` | owner | — | **Booking** (tour) |
 | POST | `/bookings/:reference/cancel` | TOURIST | — | **Booking** (status `CANCELLED`) |
 
-`status` filter on `/bookings/me` is one of `upcoming` \| `completed` \| `cancelled` (maps to the
-UI tabs). Every booking response embeds an `item` summary (tour `id`, `slug`, `title`, `imageUrl`,
-`startsAt`), so a trips list renders in a single call — no per-booking tour fetches. See the
-lifecycle below.
+**`GET /bookings/me` is the unified trips feed** — it merges tour bookings *and* reservations
+(stays/flights/tables) into one list. Each entry:
+
+```ts
+Trip = { reference, itemType: 'TOUR'|'STAY'|'FLIGHT'|'TABLE', status, total /* decimal GHS */,
+         currency, createdAt, item?: { id, slug?, title, subtitle?, imageUrl?, startsAt?, endsAt? },
+         departureId?, seats? /* tour only */ }
+```
+
+Filter with `status` (`upcoming` = PENDING/CONFIRMED · `completed` · `cancelled`) and/or `type`
+(`TOUR`/`STAY`/`FLIGHT`/`TABLE`). The embedded `item` means the list renders in one call — no
+per-booking lookups. `POST /bookings` and `GET/cancel /bookings/:reference` remain **tour-specific**;
+non-tour reservations are created by their module (e.g. Food) and managed at
+`GET` / `POST /reservations/:reference/cancel`.
 
 ### Payments (`/api/v1/payments`)
 
@@ -377,7 +390,7 @@ straight into the booking flow. Invented tours are stripped out server-side.
 {
   destination: string,        // required, 2–120 chars, e.g. "Cape Coast"
   days: number,               // required, 1–14
-  budgetMinor?: number,       // optional, GHS pesewas (≥ 0)
+  budget?: number,            // optional, decimal GHS (≥ 0)
   partySize?: number,         // optional, 1–20, default 1
   interests?: string[]        // optional, up to 10, each 1–40 chars, e.g. ["history","beaches"]
 }
@@ -394,14 +407,14 @@ server has no AI key configured.
   title: string,               // model-generated headline
   destinationName: string,
   days: number,
-  budgetMinor?: number,
+  budget?: number,
   partySize: number,
   interests: string[],
   model: string,               // model id that produced it
   createdAt: string,           // ISO
   plan: {
     summary: string,
-    estimatedTotalMinor?: number,   // GHS pesewas
+    estimatedTotal?: number,        // decimal GHS
     notes?: string[],
     days: [
       {
@@ -413,7 +426,7 @@ server has no AI key configured.
             kind: 'TOUR' | 'MEAL' | 'FREE' | 'TIP',
             title: string,
             description: string,
-            estimatedCostMinor?: number,   // GHS pesewas
+            estimatedCost?: number,        // decimal GHS
             bookable: boolean,             // true ONLY for validated TOUR items
             tourId?: string,               // present & real when bookable === true
             tourSlug?: string              // present when bookable === true
@@ -474,6 +487,34 @@ EmergencyContact = { id, name, phone, email?, relationship? }
   a number from `/emergency/contacts`; **Nearest Hospital** → top `facilities?type=HOSPITAL` hit;
   **My Embassy** → `facilities?type=EMBASSY`.
 
+## 9c. Food (M4 — restaurants & tables)
+
+Restaurant browsing is **public**; reserving a table needs auth.
+
+| Method | Path | Auth | Query / Body | `data` |
+|---|---|---|---|---|
+| GET | `/restaurants` | public | `q?, cuisine?, priceTier?, dietary?, lat?, lng?, openNow?, page?, limit?` | paginated **Restaurant** |
+| GET | `/restaurants/:slug` | public | — | **Restaurant** |
+| GET | `/restaurants/:id/menu` | public | — | `{ sections: [{ category, items: [{ name, description?, price }] }] }` |
+| GET | `/restaurants/:id/availability` | public | `date (ISO), partySize` | `{ date, partySize, slots: string[] /* ISO */ }` |
+| POST | `/restaurants/:id/reserve` | TOURIST | `{ at (ISO), partySize }` | **Reservation** (a `TABLE`, `CONFIRMED`) |
+
+```ts
+Restaurant = { id, slug, name, cuisine, priceTier /* 1–4 */, lat, lng, distanceKm?,
+               ratingAvg, ratingCount, dietary: ('VEGETARIAN'|'VEGAN'|'HALAL'|'GLUTEN_FREE')[],
+               isOpenNow, heroImageUrl?, images: string[], description, openingHours: [{day,opens,closes}] }
+Reservation = { reference /* "TBL-2026-0001" */, type: 'STAY'|'FLIGHT'|'TABLE',
+                status, total /* decimal GHS */, currency, item, createdAt }
+```
+
+Notes:
+- `?lat=&lng=` adds `distanceKm` and sorts nearest-first. `dietary` filters to one tag; `priceTier`
+  1–4 maps to ₵–₵₵₵₵; `openNow=true` filters by the weekly `openingHours`.
+- A table reservation is **free and confirmed immediately** (no payment), and it appears in the
+  unified `GET /bookings/me` with `itemType: 'TABLE'`. Manage it via `GET` /
+  `POST /reservations/:reference/cancel`.
+- `menu` prices and reservation `total` are decimal GHS, per §5 Money.
+
 ## 10. Known gaps & gotchas (read before building)
 
 1. **Avatar upload** *(resolved)* — `POST /uploads/image` now accepts the TOURIST role, so the
@@ -481,9 +522,11 @@ EmergencyContact = { id, name, phone, email?, relationship? }
    `avatarUrl`.
 2. **AI is synchronous and can be slow.** Reiterating §9: no streaming; budget for ~75s on the
    current free model and show a spinner. Ask the backend team to switch to a faster model for demos.
-3. **Only the Tours vertical exists.** There are no flight/hotel/food/transport/emergency endpoints.
-   Don't build UI expecting them.
-4. **Money is always integer pesewas.** Never send/expect decimals for amounts.
+3. **Not every vertical exists yet.** Tours, Emergency, and Food are live; **Hotels, Flights, and
+   Transport are not** — don't build UI expecting those endpoints.
+4. **Money is decimal GHS on the API.** Send/read `price`/`total`/`amount`/`budget` as decimal
+   numbers (≤2 dp); more than 2 decimals is rejected with a 400. (Internally it's pesewas, but you
+   never see that.)
 5. **Payment confirmation is asynchronous.** After redirecting to Paystack, confirmation arrives via
    the webhook → socket, not as the direct response to any call your frontend makes. Drive the UI
    off `booking.status_changed` or poll `GET /payments/:reference/verify`.
@@ -500,7 +543,11 @@ EmergencyContact = { id, name, phone, email?, relationship? }
 | Loyalty tier | `BRONZE`, `SILVER`, `GOLD`, `PLATINUM` |
 | Tour status | `DRAFT`, `PENDING_REVIEW`, `APPROVED`, `SUSPENDED` |
 | Departure status | `SCHEDULED`, `CANCELLED` |
-| Booking status | `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED` |
+| Booking / Reservation status | `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED` |
 | Payment status | `PENDING`, `PAID`, `FAILED`, `REFUNDED` |
+| Trip / Reservation `itemType` | `TOUR`, `STAY`, `FLIGHT`, `TABLE` |
 | Itinerary item `period` | `morning`, `afternoon`, `evening` |
 | Itinerary item `kind` | `TOUR`, `MEAL`, `FREE`, `TIP` |
+| Facility type | `HOSPITAL`, `CLINIC`, `PHARMACY`, `POLICE`, `FIRE`, `EMBASSY` |
+| SOS kind | `MEDICAL`, `SECURITY`, `FIRE`, `OTHER` |
+| Restaurant dietary | `VEGETARIAN`, `VEGAN`, `HALAL`, `GLUTEN_FREE` |
