@@ -1,5 +1,3 @@
-import { BookingStatus } from './entities/tour-booking.entity';
-
 export const BOOKING_CANCELLED = 'booking.cancelled';
 export const BOOKING_STATUS_CHANGED = 'booking.status_changed';
 export const AVAILABILITY_CHANGED = 'availability.changed';
@@ -12,7 +10,8 @@ export interface BookingCancelledEvent {
 export interface BookingStatusChangedEvent {
   userId: string;
   reference: string;
-  status: BookingStatus;
+  /** A booking or reservation status value (both share the same strings). */
+  status: string;
   changedAt: string;
 }
 

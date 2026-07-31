@@ -11,6 +11,7 @@ import { ItinerariesModule } from './modules/itineraries/itineraries.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ToursModule } from './modules/tours/tours.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
@@ -27,6 +28,7 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     DestinationsModule,
     ToursModule,
+    ReservationsModule,
     BookingsModule,
     PaymentsModule,
     ReviewsModule,

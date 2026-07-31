@@ -24,6 +24,8 @@ import {
 import { BookingItem } from './booking-item';
 import { BookingsRepository } from './bookings.repository';
 import { BookingQueryDto } from './dto/booking-query.dto';
+import { TripResponseDto } from './dto/trip-response.dto';
+import { ReservationsService } from '../reservations/reservations.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { BookingStatus, TourBooking } from './entities/tour-booking.entity';
 import { TourDeparturesService } from '../tours/tour-departures.service';
@@ -37,6 +39,14 @@ type BookingConfig = {
   cancellationWindowHours: number;
 };
 
+/** Maps a trips tab to the statuses it shows across bookings and reservations. */
+function matchesTab(status: string, tab?: string): boolean {
+  if (!tab) return true;
+  if (tab === 'upcoming') return status === 'PENDING' || status === 'CONFIRMED';
+  if (tab === 'completed') return status === 'COMPLETED';
+  return status === 'CANCELLED';
+}
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -47,6 +57,7 @@ export class BookingsService {
     private readonly dataSource: DataSource,
     private readonly events: EventEmitter2,
     private readonly users: UsersService,
+    private readonly reservations: ReservationsService,
   ) {}
 
   /** SeatCounter port implementation consumed by TourDeparturesService. */
@@ -206,24 +217,38 @@ export class BookingsService {
     return booking;
   }
 
-  async findMine(
-    touristId: string,
-    q: BookingQueryDto,
-  ): Promise<Paginated<TourBooking>> {
-    const { skip, take } = applyPagination(q);
-    const [data, total] = await this.repo.findMine(
-      touristId,
-      q.status,
-      new Date(),
-      skip,
-      take,
-    );
-    return paginate(data, total, q);
-  }
-
   /** Resolves the embedded tour summary for one or more bookings, in one query. */
   resolveItems(bookings: TourBooking[]): Promise<Map<string, BookingItem>> {
     return this.repo.itemsForDepartures(bookings.map((b) => b.departureId));
+  }
+
+  /**
+   * Unified trips list: tour bookings and other reservations merged into one
+   * feed, filtered by tab/type, newest first, paginated in memory (fine at the
+   * per-user volumes here).
+   */
+  async findMineTrips(
+    userId: string,
+    q: BookingQueryDto,
+  ): Promise<Paginated<TripResponseDto>> {
+    const [tourBookings, reservations] = await Promise.all([
+      this.repo.findAllForUser(userId),
+      this.reservations.findMine(userId),
+    ]);
+    const items = await this.resolveItems(tourBookings);
+
+    const trips: TripResponseDto[] = [
+      ...tourBookings.map((b) =>
+        TripResponseDto.fromTour(b, items.get(b.departureId)),
+      ),
+      ...reservations.map((r) => TripResponseDto.fromReservation(r)),
+    ]
+      .filter((t) => !q.type || t.itemType === q.type)
+      .filter((t) => matchesTab(t.status, q.status))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const { skip, take } = applyPagination(q);
+    return paginate(trips.slice(skip, skip + take), trips.length, q);
   }
 
   /** Cancel unpaid PENDING bookings past the seat-hold window. Returns the count. */

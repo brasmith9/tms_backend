@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
-import { BookingTab } from './dto/booking-query.dto';
 import { BookingItem } from './booking-item';
 import { BookingStatus, TourBooking } from './entities/tour-booking.entity';
 
@@ -61,35 +60,6 @@ export class BookingsRepository {
     return this.scoped(manager).findOne({ where: { id } });
   }
 
-  async findMine(
-    touristId: string,
-    tab: BookingTab | undefined,
-    futureFrom: Date,
-    skip: number,
-    take: number,
-  ): Promise<[TourBooking[], number]> {
-    const qb = this.repo
-      .createQueryBuilder('b')
-      // tour_bookings.departure_id is varchar while tour_departures.id is uuid,
-      // so the join needs an explicit cast to compare them.
-      .leftJoin('tour_departures', 'd', 'd.id::text = b.departure_id')
-      .where('b.tourist_id = :touristId', { touristId });
-
-    if (tab === 'upcoming') {
-      qb.andWhere('b.status IN (:...live)', { live: LIVE }).andWhere(
-        'd.departs_at >= :now',
-        { now: futureFrom },
-      );
-    } else if (tab === 'completed') {
-      qb.andWhere('b.status = :s', { s: BookingStatus.COMPLETED });
-    } else if (tab === 'cancelled') {
-      qb.andWhere('b.status = :s', { s: BookingStatus.CANCELLED });
-    }
-
-    qb.orderBy('b.created_at', 'DESC').skip(skip).take(take);
-    return qb.getManyAndCount();
-  }
-
   /** Resolves a display summary of the tour behind each departure, in one query. */
   async itemsForDepartures(
     departureIds: string[],
@@ -128,6 +98,14 @@ export class BookingsRepository {
       });
     }
     return map;
+  }
+
+  /** All of a user's tour bookings, newest first, for the unified trips list. */
+  findAllForUser(touristId: string): Promise<TourBooking[]> {
+    return this.repo.find({
+      where: { touristId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   findExpiredPending(

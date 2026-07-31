@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ReservationsModule } from '../reservations/reservations.module';
 import { SEAT_COUNTER } from '../tours/seat-counter';
 import { ToursModule } from '../tours/tours.module';
 import { UsersModule } from '../users/users.module';
@@ -10,7 +11,12 @@ import { BookingsService } from './bookings.service';
 import { TourBooking } from './entities/tour-booking.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TourBooking]), ToursModule, UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([TourBooking]),
+    ToursModule,
+    UsersModule,
+    ReservationsModule,
+  ],
   controllers: [BookingsController],
   providers: [
     BookingsService,

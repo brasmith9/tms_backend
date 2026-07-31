@@ -18,6 +18,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { BookingQueryDto } from './dto/booking-query.dto';
 import { BookingResponseDto } from './dto/booking-response.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { TripResponseDto } from './dto/trip-response.dto';
 import { TourBooking } from './entities/tour-booking.entity';
 import { BookingsService } from './bookings.service';
 
@@ -40,17 +41,12 @@ export class BookingsController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: 'List my bookings, filtered by tab' })
-  @ApiPaginatedResponse(BookingResponseDto)
-  async mine(@CurrentUser() user: AuthUser, @Query() q: BookingQueryDto) {
-    const page = await this.bookings.findMine(user.id, q);
-    const items = await this.bookings.resolveItems(page.results);
-    return {
-      ...page,
-      results: page.results.map((b) =>
-        BookingResponseDto.from(b, items.get(b.departureId)),
-      ),
-    };
+  @ApiOperation({
+    summary: 'My unified trips (tours + reservations), filtered by tab/type',
+  })
+  @ApiPaginatedResponse(TripResponseDto)
+  mine(@CurrentUser() user: AuthUser, @Query() q: BookingQueryDto) {
+    return this.bookings.findMineTrips(user.id, q);
   }
 
   @Get(':reference')
