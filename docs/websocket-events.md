@@ -68,3 +68,19 @@ rides.on('ride.driver_moved', ({ lat, lng, bearing, etaMinutes }) => { /* move t
 
 `ride.driver_moved` is throttled server-side (~one update / 4s) — it is not raw GPS.
 Both events go only to the `ride:<rideId>` room.
+
+---
+
+## `/notifications` namespace — NotificationsGateway
+
+Pushes new notifications to their owner. Authenticated handshake required; on
+connect the client joins its own `user:<userId>` room automatically (no subscribe).
+
+| Direction | Event | Payload |
+|-----------|-------|---------|
+| server → client | `notification.created` | `{ id, userId, type, title, body, read, createdAt (ISO) }` |
+
+Emitted whenever a notification is created — today that is on booking/reservation
+and ride status changes (see NotificationsService `@OnEvent` handlers). The REST
+feed (`GET /notifications`, `POST /notifications/:id/read`, `/read-all`) is the
+source of truth; the socket is just the live nudge.

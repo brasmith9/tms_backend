@@ -8,10 +8,10 @@ context.
 > Scope note: implemented today — **Tours & Booking**, **Emergency (M6)**, **Food (M4)**, and
 > **Hotels/Stays (M3)**, **Flights (M2)**, and **Transport (M5, live-tracked rides)** — plus auth,
 > profiles, payments, reviews, uploads, real-time notifications, and an AI itinerary planner. All
-> five tourism verticals are live. Bookings are **unified**: `GET /bookings/me` returns tours and
+> five tourism verticals are live, plus the cross-cutting **Favourites**, **Notifications**, and
+> **Reference-data** services (§9g). Bookings are **unified**: `GET /bookings/me` returns tours and
 > reservations in one feed (see §6 Bookings). Paid reservations (stays, flights) settle through the
-> same `POST /payments/initiate` as tours. Still **not** implemented: the cross-cutting Favourites /
-> Notifications-API / Reference-data services.
+> same `POST /payments/initiate` as tours. **The entire backend roadmap is implemented.**
 
 ---
 
@@ -609,6 +609,47 @@ NearbyDriver = { id, name, rating, etaMinutes, lat, lng, vehicle:{make,model,pla
   settle-after-completion** — the ride records its `fare` on `COMPLETED`; there is no upfront charge
   and no online capture wired (no saved card), which is the current documented scope.
 
+## 9g. Cross-cutting services
+
+### Reference data (`/api/v1/reference`, public)
+| Method | Path | `data` |
+|---|---|---|
+| GET | `/reference` | `string[]` — the available set names |
+| GET | `/reference/:set` | `{ code, label }[]` (`404` for an unknown set) |
+
+Sets: `vehicle-types`, `ride-statuses`, `cabins`, `trip-types`, `stay-categories`, `facility-types`,
+`dietary`, `amenities`, `cuisines`, `airports`, `loyalty-tiers`. Use these to populate filter chips
+and dropdowns instead of hardcoding them.
+
+### Favourites (`/api/v1/favorites`, auth)
+| Method | Path | Body / Query | `data` |
+|---|---|---|---|
+| GET | `/favorites` | `type?, page?, limit?` | paginated **Favorite** |
+| POST | `/favorites` | `{ type, itemId }` | **Favorite** (`409` if already saved) |
+| DELETE | `/favorites/:id` | — | `null` |
+
+```ts
+Favorite = { id, type: 'TOUR'|'STAY'|'RESTAURANT'|'DESTINATION', itemId,
+             item: { title, imageUrl?, slug? } /* snapshot at save time */, createdAt }
+```
+`item` is snapshotted when you save, so the Saved-Places screen renders in one call — no per-item
+fetches. Adding an unknown `itemId` → `404`; adding a duplicate → `409`.
+
+### Notifications (`/api/v1/notifications`, auth)
+| Method | Path | Query | `data` |
+|---|---|---|---|
+| GET | `/notifications` | `unreadOnly?, page?, limit?` | paginated **Notification** + `unread` count |
+| POST | `/notifications/:id/read` | — | **Notification** |
+| POST | `/notifications/read-all` | — | `{ updated: number }` |
+
+```ts
+Notification = { id, type: 'BOOKING'|'RIDE', title, body, data?, read, createdAt }
+```
+Notifications are **created automatically** by the backend on booking/reservation and ride status
+changes, and pushed live over the **`/notifications` socket** (`notification.created`, joins your
+`user:<id>` room on connect — see §8 / `websocket-events.md`). The paginated `data` also carries an
+`unread` count for the badge.
+
 ## 10. Known gaps & gotchas (read before building)
 
 1. **Avatar upload** *(resolved)* — `POST /uploads/image` now accepts the TOURIST role, so the
@@ -616,8 +657,9 @@ NearbyDriver = { id, name, rating, etaMinutes, lat, lng, vehicle:{make,model,pla
    `avatarUrl`.
 2. **AI is synchronous and can be slow.** Reiterating §9: no streaming; budget for ~75s on the
    current free model and show a spinner. Ask the backend team to switch to a faster model for demos.
-3. **All five verticals are live** (Tours, Emergency, Food, Hotels/Stays, Flights, Transport). Not
-   built: the cross-cutting **Favourites**, **Notifications API**, and **Reference-data** services.
+3. **The full roadmap is implemented** — all five verticals (Tours, Emergency, Food, Hotels/Stays,
+   Flights, Transport) plus Favourites, Notifications, and Reference data. Nothing from the delivery
+   order is outstanding.
 4. **Money is decimal GHS on the API.** Send/read `price`/`total`/`amount`/`budget` as decimal
    numbers (≤2 dp); more than 2 decimals is rejected with a 400. (Internally it's pesewas, but you
    never see that.)
