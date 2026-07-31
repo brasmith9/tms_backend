@@ -73,7 +73,10 @@ describe('ReservationsService', () => {
   it('404s an unknown reference and forbids a non-owner', async () => {
     repo.findByReference.mockResolvedValueOnce(null);
     await expect(
-      service.findByReference('X', { id: 'u1', role: UserRole.TOURIST } as never),
+      service.findByReference('X', {
+        id: 'u1',
+        role: UserRole.TOURIST,
+      } as never),
     ).rejects.toThrow(NotFoundException);
 
     repo.findByReference.mockResolvedValueOnce({

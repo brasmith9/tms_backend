@@ -37,7 +37,11 @@ export class Reservation {
   @Column({ unique: true }) reference!: string;
   @Index() @Column({ name: 'user_id' }) userId!: string;
   @Column({ type: 'enum', enum: ReservationType }) type!: ReservationType;
-  @Column({ type: 'enum', enum: ReservationStatus, default: ReservationStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: ReservationStatus,
+    default: ReservationStatus.PENDING,
+  })
   status!: ReservationStatus;
   @Column({ name: 'total_minor', type: 'int' }) totalMinor!: number;
   @Column({ default: 'GHS' }) currency!: string;

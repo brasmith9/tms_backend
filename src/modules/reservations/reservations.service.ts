@@ -59,8 +59,7 @@ export class ReservationsService {
       throw new NotFoundException(`Reservation ${reference} not found`);
     }
     const privileged =
-      requester.role === UserRole.ADMIN ||
-      requester.role === UserRole.OPERATOR;
+      requester.role === UserRole.ADMIN || requester.role === UserRole.OPERATOR;
     if (reservation.userId !== requester.id && !privileged) {
       throw new ForbiddenException('Not permitted to view this reservation');
     }
@@ -95,13 +94,11 @@ export class ReservationsService {
   }
 
   /** Marks a PENDING reservation CONFIRMED after payment; used by PaymentsService. */
-  async confirmPaid(
-    id: string,
-    manager: EntityManager,
-  ): Promise<Reservation> {
+  async confirmPaid(id: string, manager: EntityManager): Promise<Reservation> {
     const repo = manager.getRepository(Reservation);
     const reservation = await repo.findOne({ where: { id } });
-    if (!reservation) throw new NotFoundException(`Reservation ${id} not found`);
+    if (!reservation)
+      throw new NotFoundException(`Reservation ${id} not found`);
     if (reservation.status === ReservationStatus.PENDING) {
       reservation.status = ReservationStatus.CONFIRMED;
       await repo.save(reservation);

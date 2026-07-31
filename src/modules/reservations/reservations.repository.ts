@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, EntityManager, Repository } from 'typeorm';
-import {
-  Reservation,
-  ReservationType,
-} from './entities/reservation.entity';
+import { Reservation, ReservationType } from './entities/reservation.entity';
 
 @Injectable()
 export class ReservationsRepository {

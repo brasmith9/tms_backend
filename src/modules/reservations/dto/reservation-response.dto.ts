@@ -13,7 +13,8 @@ export class ReservationResponseDto {
   @ApiProperty({ enum: ReservationStatus }) status!: ReservationStatus;
   @ApiProperty({ example: 0, description: 'Total in GHS' }) total!: number;
   @ApiProperty({ example: 'GHS' }) currency!: string;
-  @ApiProperty({ type: 'object', additionalProperties: true }) item!: ReservationItem;
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  item!: ReservationItem;
   @ApiProperty() createdAt!: Date;
 
   static from(r: Reservation): ReservationResponseDto {

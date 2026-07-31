@@ -18,7 +18,8 @@ export class TripResponseDto {
   @ApiProperty() createdAt!: Date;
   @ApiPropertyOptional({ description: 'Display summary of the booked item' })
   item?: BookingItem | ReservationItem;
-  @ApiPropertyOptional({ description: 'Tour bookings only' }) departureId?: string;
+  @ApiPropertyOptional({ description: 'Tour bookings only' })
+  departureId?: string;
   @ApiPropertyOptional({ description: 'Tour bookings only' }) seats?: number;
 
   static fromTour(b: TourBooking, item?: BookingItem): TripResponseDto {
