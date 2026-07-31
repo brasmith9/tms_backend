@@ -16,6 +16,8 @@ import { Restaurant } from '../../modules/food/entities/restaurant.entity';
 import { Stay } from '../../modules/stays/entities/stay.entity';
 import { Room } from '../../modules/stays/entities/room.entity';
 import { Flight } from '../../modules/flights/entities/flight.entity';
+import { Driver } from '../../modules/rides/entities/driver.entity';
+import { VehicleType } from '../../modules/rides/ride.types';
 import {
   SEED_PASSWORD,
   seedDestinations,
@@ -293,6 +295,107 @@ async function seed(ds: DataSource): Promise<void> {
     console.log(`+ ${flights.length} flights across ${routes.length} routes`);
   } else {
     console.log('= flights already present');
+  }
+
+  // Drivers around Accra (idempotent by plate).
+  const driverRepo = ds.getRepository(Driver);
+  const seedDrivers = [
+    {
+      name: 'Kwesi Boateng',
+      phone: '+233201110001',
+      vehicleType: VehicleType.TAXI,
+      vehicleMake: 'Toyota',
+      vehicleModel: 'Corolla',
+      vehiclePlate: 'GR-1201-24',
+      vehicleColor: 'Silver',
+      lat: 5.5605,
+      lng: -0.2005,
+    },
+    {
+      name: 'Ama Serwaa',
+      phone: '+233201110002',
+      vehicleType: VehicleType.TAXI,
+      vehicleMake: 'Kia',
+      vehicleModel: 'Rio',
+      vehiclePlate: 'GT-4402-23',
+      vehicleColor: 'White',
+      lat: 5.5702,
+      lng: -0.187,
+    },
+    {
+      name: 'Yaw Darko',
+      phone: '+233201110003',
+      vehicleType: VehicleType.CAR_HIRE,
+      vehicleMake: 'Toyota',
+      vehicleModel: 'Camry',
+      vehiclePlate: 'GN-8813-24',
+      vehicleColor: 'Black',
+      lat: 5.6035,
+      lng: -0.1712,
+    },
+    {
+      name: 'Efua Mensah',
+      phone: '+233201110004',
+      vehicleType: VehicleType.CAR_HIRE,
+      vehicleMake: 'Hyundai',
+      vehicleModel: 'Elantra',
+      vehiclePlate: 'GW-2290-23',
+      vehicleColor: 'Grey',
+      lat: 5.5555,
+      lng: -0.196,
+    },
+    {
+      name: 'Kofi Owusu',
+      phone: '+233201110005',
+      vehicleType: VehicleType.SHUTTLE,
+      vehicleMake: 'Toyota',
+      vehicleModel: 'Hiace',
+      vehiclePlate: 'GS-1150-24',
+      vehicleColor: 'Blue',
+      lat: 5.585,
+      lng: -0.183,
+    },
+    {
+      name: 'Adjoa Nyarko',
+      phone: '+233201110006',
+      vehicleType: VehicleType.SHUTTLE,
+      vehicleMake: 'Nissan',
+      vehicleModel: 'Urvan',
+      vehiclePlate: 'GR-6677-22',
+      vehicleColor: 'White',
+      lat: 5.548,
+      lng: -0.223,
+    },
+    {
+      name: 'Kojo Antwi',
+      phone: '+233201110007',
+      vehicleType: VehicleType.BUS,
+      vehicleMake: 'Mercedes',
+      vehicleModel: 'Sprinter',
+      vehiclePlate: 'GC-3321-23',
+      vehicleColor: 'Yellow',
+      lat: 5.6,
+      lng: -0.21,
+    },
+    {
+      name: 'Akosua Frimpong',
+      phone: '+233201110008',
+      vehicleType: VehicleType.TAXI,
+      vehicleMake: 'Suzuki',
+      vehicleModel: 'Swift',
+      vehiclePlate: 'GX-9098-24',
+      vehicleColor: 'Red',
+      lat: 5.562,
+      lng: -0.174,
+    },
+  ];
+  for (const d of seedDrivers) {
+    if (await driverRepo.findOne({ where: { vehiclePlate: d.vehiclePlate } })) {
+      console.log(`= driver ${d.vehiclePlate} already present`);
+      continue;
+    }
+    await driverRepo.save(driverRepo.create(d));
+    console.log(`+ driver ${d.name} (${d.vehicleType})`);
   }
 }
 
