@@ -122,7 +122,7 @@ export async function seedApprovedTourWithDeparture(
       title: `Tour ${stamp}`,
       destinationId: dest.body.data.id,
       description: 'a tour',
-      priceMinor: 12000,
+      price: 120,
       durationMinutes: 120,
     });
   const tourId = tour.body.data.id as string;

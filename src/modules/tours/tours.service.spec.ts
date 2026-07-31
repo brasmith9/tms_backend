@@ -35,12 +35,46 @@ describe('ToursService', () => {
       title: 'Kakum Canopy Walk',
       destinationId: 'd1',
       description: 'x',
-      priceMinor: 12000,
+      price: 120,
       durationMinutes: 180,
     });
     expect(tour.status).toBe(TourStatus.DRAFT);
     expect(tour.slug).toMatch(/^kakum-canopy-walk/);
     expect(tour.operatorId).toBe('op1');
+  });
+
+  it('stores a price with coins as pesewas', async () => {
+    const tour = await service.create('op1', {
+      title: 'Kakum Canopy Walk',
+      destinationId: 'd1',
+      description: 'x',
+      price: 150.5,
+      durationMinutes: 180,
+    });
+    expect(tour.priceMinor).toBe(15050);
+    expect((tour as unknown as { price?: number }).price).toBeUndefined();
+  });
+
+  it('converts price to pesewas on update', async () => {
+    repo.findById.mockResolvedValue({
+      id: 't1',
+      operatorId: 'op1',
+      status: TourStatus.DRAFT,
+      priceMinor: 12000,
+    });
+    const tour = await service.update('t1', 'op1', { price: 99.99 });
+    expect(tour.priceMinor).toBe(9999);
+  });
+
+  it('leaves priceMinor alone when update omits price', async () => {
+    repo.findById.mockResolvedValue({
+      id: 't1',
+      operatorId: 'op1',
+      status: TourStatus.DRAFT,
+      priceMinor: 12000,
+    });
+    const tour = await service.update('t1', 'op1', { title: 'New title' });
+    expect(tour.priceMinor).toBe(12000);
   });
 
   it('moves DRAFT to PENDING_REVIEW on submit', async () => {

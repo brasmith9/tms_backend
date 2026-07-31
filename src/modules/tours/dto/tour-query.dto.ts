@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 export class TourQueryDto extends PaginationQueryDto {
@@ -13,17 +13,17 @@ export class TourQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional() @IsOptional() @IsUUID() destinationId?: string;
 
-  @ApiPropertyOptional({ description: 'Min price in pesewas' })
+  @ApiPropertyOptional({ description: 'Min price in GHS', example: 150.5 })
   @Type(() => Number)
   @IsOptional()
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   minPrice?: number;
 
-  @ApiPropertyOptional({ description: 'Max price in pesewas' })
+  @ApiPropertyOptional({ description: 'Max price in GHS', example: 300 })
   @Type(() => Number)
   @IsOptional()
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   maxPrice?: number;
 

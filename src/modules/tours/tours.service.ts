@@ -13,6 +13,7 @@ import {
 } from '../../common/pagination/paginate';
 import { DestinationsService } from '../destinations/destinations.service';
 import { CandidateTour } from './candidate-tour';
+import { cedisToPesewas } from '../../common/money';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { TourQueryDto } from './dto/tour-query.dto';
@@ -29,9 +30,11 @@ export class ToursService {
   async create(operatorId: string, dto: CreateTourDto): Promise<Tour> {
     await this.destinations.findOne(dto.destinationId); // 404 if unknown
     const slug = `${this.slugify(dto.title)}-${randomBytes(3).toString('hex')}`;
+    const { price, ...rest } = dto;
     return this.repo.save(
       this.repo.create({
-        ...dto,
+        ...rest,
+        priceMinor: cedisToPesewas(price),
         operatorId,
         slug,
         currency: 'GHS',
@@ -60,7 +63,9 @@ export class ToursService {
     dto: UpdateTourDto,
   ): Promise<Tour> {
     const tour = await this.owned(id, operatorId);
-    Object.assign(tour, dto);
+    const { price, ...rest } = dto;
+    Object.assign(tour, rest);
+    if (price !== undefined) tour.priceMinor = cedisToPesewas(price);
     return this.repo.save(tour);
   }
 

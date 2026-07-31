@@ -130,7 +130,7 @@ describe('ItinerariesService', () => {
     await service.generate('user-1', {
       destination: 'Cape Coast',
       days: 2,
-      budgetMinor: 300000,
+      budget: 3000.5,
       partySize: 3,
       interests: ['history'],
     });
@@ -140,7 +140,7 @@ describe('ItinerariesService', () => {
         title: 'Cape Coast in 1 day',
         destinationName: 'Cape Coast',
         days: 2,
-        budgetMinor: 300000,
+        budgetMinor: 300050,
         partySize: 3,
         interests: ['history'],
         model: 'test-model',

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -20,10 +21,13 @@ export class CreateTourDto {
   @IsString()
   description!: string;
 
-  @ApiProperty({ example: 12000, description: 'Price in pesewas (GHS 120.00)' })
-  @IsInt()
+  @ApiProperty({
+    example: 150.5,
+    description: 'Price in GHS, up to 2 decimals',
+  })
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  priceMinor!: number;
+  price!: number;
 
   @ApiProperty({ example: 180 }) @IsInt() @Min(1) durationMinutes!: number;
 

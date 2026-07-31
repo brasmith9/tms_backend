@@ -68,11 +68,13 @@ describe('Tours booking spine (e2e)', () => {
         title: 'Spine Canopy Walk',
         destinationId: dest.body.data.id,
         description: 'a walk',
-        priceMinor: 12000,
+        price: 120.5,
         durationMinutes: 120,
       })
       .expect(201);
     const tourId = tour.body.data.id as string;
+    // Price round-trips as decimal cedis, coins intact.
+    expect(tour.body.data.price).toBe(120.5);
 
     await request(server)
       .post(`/api/v1/tours/${tourId}/submit`)
@@ -154,7 +156,7 @@ describe('Tours booking spine (e2e)', () => {
         title: 'Full Tour',
         destinationId: dest.body.data.id,
         description: 'x',
-        priceMinor: 5000,
+        price: 50,
         durationMinutes: 60,
       });
     await request(server)
@@ -184,5 +186,24 @@ describe('Tours booking spine (e2e)', () => {
       message: 'Not enough seats remaining on this departure',
       data: null,
     });
+  });
+
+  it('rejects a price with sub-pesewa precision', async () => {
+    const dest = await request(server)
+      .post('/api/v1/destinations')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'Precision Coast', region: 'Central', description: 'x' });
+    const res = await request(server)
+      .post('/api/v1/tours')
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({
+        title: 'Too Precise',
+        destinationId: dest.body.data.id,
+        description: 'x',
+        price: 150.999,
+        durationMinutes: 60,
+      })
+      .expect(400);
+    expect(res.body.code).toBe(400);
   });
 });

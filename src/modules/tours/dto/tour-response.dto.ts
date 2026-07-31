@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { pesewasToCedis } from '../../../common/money';
 import { Tour, TourStatus } from '../entities/tour.entity';
 
 export class TourResponseDto {
@@ -8,7 +9,7 @@ export class TourResponseDto {
   @ApiProperty() title!: string;
   @ApiProperty() slug!: string;
   @ApiProperty() description!: string;
-  @ApiProperty({ example: 12000 }) priceMinor!: number;
+  @ApiProperty({ example: 150.5, description: 'Price in GHS' }) price!: number;
   @ApiProperty({ example: 'GHS' }) currency!: string;
   @ApiProperty() durationMinutes!: number;
   @ApiProperty({ enum: TourStatus }) status!: TourStatus;
@@ -24,7 +25,7 @@ export class TourResponseDto {
     dto.title = t.title;
     dto.slug = t.slug;
     dto.description = t.description;
-    dto.priceMinor = t.priceMinor;
+    dto.price = pesewasToCedis(t.priceMinor);
     dto.currency = t.currency;
     dto.durationMinutes = t.durationMinutes;
     dto.status = t.status;

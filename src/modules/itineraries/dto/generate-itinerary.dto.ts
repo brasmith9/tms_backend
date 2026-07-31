@@ -4,6 +4,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Length,
@@ -25,14 +26,14 @@ export class GenerateItineraryDto {
   days!: number;
 
   @ApiPropertyOptional({
-    example: 200000,
-    description: 'Budget in GHS pesewas',
+    example: 2000.5,
+    description: 'Budget in GHS, up to 2 decimals',
   })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  budgetMinor?: number;
+  budget?: number;
 
   @ApiPropertyOptional({ example: 2, minimum: 1, maximum: 20, default: 1 })
   @IsOptional()

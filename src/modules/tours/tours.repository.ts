@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
+import { cedisToPesewas } from '../../common/money';
 import { CandidateTour } from './candidate-tour';
 import { TourQueryDto } from './dto/tour-query.dto';
 import { Destination } from '../destinations/entities/destination.entity';
@@ -58,10 +59,14 @@ export class ToursRepository {
       });
     }
     if (q.minPrice !== undefined) {
-      qb.andWhere('tour.price_minor >= :minPrice', { minPrice: q.minPrice });
+      qb.andWhere('tour.price_minor >= :minPrice', {
+        minPrice: cedisToPesewas(q.minPrice),
+      });
     }
     if (q.maxPrice !== undefined) {
-      qb.andWhere('tour.price_minor <= :maxPrice', { maxPrice: q.maxPrice });
+      qb.andWhere('tour.price_minor <= :maxPrice', {
+        maxPrice: cedisToPesewas(q.maxPrice),
+      });
     }
 
     const sort = (q.sort && SORTS[q.sort]) || {

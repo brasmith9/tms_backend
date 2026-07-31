@@ -1,5 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { cedisToPesewas } from '../../common/money';
 import {
   Paginated,
   applyPagination,
@@ -42,7 +43,8 @@ export class ItinerariesService {
     const result = await this.planner.plan({
       destination: dto.destination,
       days: dto.days,
-      budgetMinor: dto.budgetMinor,
+      budgetMinor:
+        dto.budget === undefined ? undefined : cedisToPesewas(dto.budget),
       partySize,
       interests,
       candidateTours,
@@ -56,7 +58,8 @@ export class ItinerariesService {
         title: result.title,
         destinationName: dto.destination,
         days: dto.days,
-        budgetMinor: dto.budgetMinor ?? null,
+        budgetMinor:
+          dto.budget === undefined ? null : cedisToPesewas(dto.budget),
         partySize,
         interests,
         plan,

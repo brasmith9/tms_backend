@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { pesewasToCedis } from '../../../common/money';
 import { Payment, PaymentStatus } from '../entities/payment.entity';
 
 export class PaymentResponseDto {
   @ApiProperty() providerRef!: string;
   @ApiProperty({ enum: PaymentStatus }) status!: PaymentStatus;
-  @ApiProperty() amountMinor!: number;
+  @ApiProperty({ example: 301, description: 'Amount in GHS' }) amount!: number;
   @ApiProperty() currency!: string;
   @ApiProperty({
     required: false,
@@ -16,7 +17,7 @@ export class PaymentResponseDto {
     const dto = new PaymentResponseDto();
     dto.providerRef = p.providerRef;
     dto.status = p.status;
-    dto.amountMinor = p.amountMinor;
+    dto.amount = pesewasToCedis(p.amountMinor);
     dto.currency = p.currency;
     dto.authorizationUrl = p.authorizationUrl;
     return dto;
