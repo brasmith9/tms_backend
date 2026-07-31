@@ -6,10 +6,10 @@ real-time WebSocket contracts, and the AI itinerary engine. Give this file to yo
 context.
 
 > Scope note: implemented today — **Tours & Booking**, **Emergency (M6)**, **Food (M4)**, and
-> **Hotels/Stays (M3, paid reservations)** — plus auth, profiles, payments, reviews, uploads,
+> **Hotels/Stays (M3)**, and **Flights (M2)** — plus auth, profiles, payments, reviews, uploads,
 > real-time notifications, and an AI itinerary planner. Bookings are **unified**: `GET /bookings/me`
-> returns tours and reservations in one feed (see §6 Bookings). Paid reservations (stays) settle
-> through the same `POST /payments/initiate` as tours. Still **not** implemented: Flights, Transport,
+> returns tours and reservations in one feed (see §6 Bookings). Paid reservations (stays, flights)
+> settle through the same `POST /payments/initiate` as tours. Still **not** implemented: Transport,
 > and the cross-cutting Favourites / Notifications-API / Reference-data services.
 
 ---
@@ -544,6 +544,35 @@ Room = { id, name, maxGuests, bed, pricePerNight /* decimal GHS */, available }
 
 The reservation shows in the unified `GET /bookings/me` with `itemType: 'STAY'`.
 
+## 9e. Flights (M2 — paid, search→offer→book)
+
+First-party inventory (not a live GDS). Browsing/search is **public**; booking needs auth and is paid.
+Fares are volatile, so use **search → offer → book**: never book a raw flight, always an offer.
+
+| Method | Path | Auth | Query / Body | `data` |
+|---|---|---|---|---|
+| GET | `/flights/airports` | public | `q?` | `{ code, name, city, country }[]` |
+| POST | `/flights/search` | public | `{ tripType, origin, destination, date (ISO), passengers:{adults,children?,infants?}, cabin, sort? }` | `{ searchId, expiresAt, offers: Offer[] }` |
+| GET | `/flights/offers/:offerId` | public | — | **Offer** (`400` once expired) |
+| POST | `/flights/offers/:offerId/book` | TOURIST | — | **Reservation** (`FLIGHT`, `PENDING`) |
+
+```ts
+Offer = { offerId, airline: { code, name, logoUrl? },
+          segments: [{ origin, destination, departsAt, arrivesAt, flightNumber, durationMinutes }],
+          stops, cabin, total /* decimal GHS, all passengers */, currency, baggageKg?, refundable,
+          amenities: string[], expiresAt /* ISO — book before this */ }
+```
+
+Notes:
+- **Offers expire (~20 min).** Book before `expiresAt`; a stale offer returns `400` on GET/book —
+  re-run search. `cabin` is `ECONOMY|PREMIUM_ECONOMY|BUSINESS|FIRST`; `sort` is `price|-price|departsAt`.
+- Fare = base × cabin multiplier × paying passengers (**infants are free**).
+- Booking an offer creates a **`PENDING`** `FLIGHT` reservation (`FLT-2026-…`); pay it with
+  **`POST /payments/initiate { bookingReference: "FLT-…" }`** exactly like a stay. It appears in the
+  unified `GET /bookings/me` as `itemType: 'FLIGHT'`.
+- `tripType` accepts `ONE_WAY|RETURN|MULTI_CITY`, but search currently prices the **outbound** slice
+  (`origin`→`destination` on `date`); return/multi-city pairing is a documented follow-up.
+
 ## 10. Known gaps & gotchas (read before building)
 
 1. **Avatar upload** *(resolved)* — `POST /uploads/image` now accepts the TOURIST role, so the
@@ -551,8 +580,8 @@ The reservation shows in the unified `GET /bookings/me` with `itemType: 'STAY'`.
    `avatarUrl`.
 2. **AI is synchronous and can be slow.** Reiterating §9: no streaming; budget for ~75s on the
    current free model and show a spinner. Ask the backend team to switch to a faster model for demos.
-3. **Not every vertical exists yet.** Tours, Emergency, Food, and Hotels/Stays are live; **Flights
-   and Transport are not** — don't build UI expecting those endpoints.
+3. **Not every vertical exists yet.** Tours, Emergency, Food, Hotels/Stays, and Flights are live;
+   **Transport is not** — don't build UI expecting those endpoints.
 4. **Money is decimal GHS on the API.** Send/read `price`/`total`/`amount`/`budget` as decimal
    numbers (≤2 dp); more than 2 decimals is rejected with a 400. (Internally it's pesewas, but you
    never see that.)
@@ -581,3 +610,5 @@ The reservation shows in the unified `GET /bookings/me` with `itemType: 'STAY'`.
 | SOS kind | `MEDICAL`, `SECURITY`, `FIRE`, `OTHER` |
 | Restaurant dietary | `VEGETARIAN`, `VEGAN`, `HALAL`, `GLUTEN_FREE` |
 | Stay category | `HOTEL`, `VILLA`, `HOSTEL`, `APARTMENT` |
+| Flight cabin | `ECONOMY`, `PREMIUM_ECONOMY`, `BUSINESS`, `FIRST` |
+| Flight tripType | `ONE_WAY`, `RETURN`, `MULTI_CITY` |
