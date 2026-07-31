@@ -44,3 +44,43 @@ capacity drop as others book. The client opts in per departure.
 
 `availability.changed` is emitted after any booking create/cancel commits for
 that departure, to everyone in the `departure:<departureId>` room.
+
+---
+
+## `/rides` namespace — RidesGateway
+
+Live ride tracking. The handshake **must** be authenticated (same access token);
+an unauthenticated connection is disconnected. The client subscribes per ride.
+
+```js
+const rides = io('http://localhost:3000/rides', { auth: { token: accessToken } });
+rides.emit('ride.subscribe', { rideId });
+rides.on('ride.status_changed', ({ status }) => { /* DRIVER_ASSIGNED → … → COMPLETED */ });
+rides.on('ride.driver_moved', ({ lat, lng, bearing, etaMinutes }) => { /* move the map marker */ });
+```
+
+| Direction | Event | Payload |
+|-----------|-------|---------|
+| client → server | `ride.subscribe` | `{ rideId: string }` |
+| client → server | `ride.unsubscribe` | `{ rideId: string }` |
+| server → client | `ride.status_changed` | `{ rideId, status: 'REQUESTED'\|'DRIVER_ASSIGNED'\|'ARRIVING'\|'IN_PROGRESS'\|'COMPLETED'\|'CANCELLED', changedAt (ISO) }` |
+| server → client | `ride.driver_moved` | `{ rideId, lat, lng, bearing, etaMinutes }` |
+
+`ride.driver_moved` is throttled server-side (~one update / 4s) — it is not raw GPS.
+Both events go only to the `ride:<rideId>` room.
+
+---
+
+## `/notifications` namespace — NotificationsGateway
+
+Pushes new notifications to their owner. Authenticated handshake required; on
+connect the client joins its own `user:<userId>` room automatically (no subscribe).
+
+| Direction | Event | Payload |
+|-----------|-------|---------|
+| server → client | `notification.created` | `{ id, userId, type, title, body, read, createdAt (ISO) }` |
+
+Emitted whenever a notification is created — today that is on booking/reservation
+and ride status changes (see NotificationsService `@OnEvent` handlers). The REST
+feed (`GET /notifications`, `POST /notifications/:id/read`, `/read-all`) is the
+source of truth; the socket is just the live nudge.

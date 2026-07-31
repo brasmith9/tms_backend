@@ -8,7 +8,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApiPaginatedResponse } from '../../common/dto/api-response.dto';
+import {
+  ApiEnvelopeResponse,
+  ApiPaginatedResponse,
+} from '../../common/dto/api-response.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -50,23 +53,27 @@ export class BookingsController {
   }
 
   @Get(':reference')
-  @ApiOperation({ summary: 'Get a booking by reference' })
-  async byReference(
+  @ApiOperation({
+    summary: 'Get a trip by reference (tour booking or reservation)',
+  })
+  @ApiEnvelopeResponse(TripResponseDto)
+  byReference(
     @CurrentUser() user: AuthUser,
     @Param('reference') reference: string,
-  ): Promise<BookingResponseDto> {
-    return this.withItem(await this.bookings.findByReference(reference, user));
+  ): Promise<TripResponseDto> {
+    return this.bookings.findTripByReference(reference, user);
   }
 
   @Post(':reference/cancel')
   @UseGuards(RolesGuard)
   @Roles(UserRole.TOURIST)
-  @ApiOperation({ summary: 'Cancel a booking (refund if outside the window)' })
-  async cancel(
+  @ApiOperation({ summary: 'Cancel a trip (refund if outside the window)' })
+  @ApiEnvelopeResponse(TripResponseDto)
+  cancel(
     @CurrentUser() user: AuthUser,
     @Param('reference') reference: string,
-  ): Promise<BookingResponseDto> {
-    return this.withItem(await this.bookings.cancel(reference, user.id));
+  ): Promise<TripResponseDto> {
+    return this.bookings.cancelTrip(reference, user.id);
   }
 
   /** Attaches the embedded tour summary to a single booking response. */

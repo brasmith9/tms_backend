@@ -33,7 +33,7 @@ export class GenerateItineraryDto {
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  budget?: number;
+  budgetMinor?: number;
 
   @ApiPropertyOptional({ example: 2, minimum: 1, maximum: 20, default: 1 })
   @IsOptional()

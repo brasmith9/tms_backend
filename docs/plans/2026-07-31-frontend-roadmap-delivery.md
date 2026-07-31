@@ -31,8 +31,12 @@ tests → seed → live verify), committed independently.
 | 5 | Food | ✅ done (TOUR-030) — restaurants, menus, availability, free table reservations |
 | 6 | Hotels | ✅ done (TOUR-034) — stays, rooms, paid STAY reservations; payments generalised in TOUR-033 |
 | 7 | Flights | ✅ done (TOUR-037) — airports, search → offer(20-min expiry) → book, paid FLIGHT reservation |
-| 8 | Transport | ⬜ next — separate stateful `/rides` resource (quote → request → live status socket) |
-| + | Cross-cutting: Favourites, Notifications API, Reference data | ⬜ |
+| 8 | Transport | ✅ done (TOUR-039) — `/rides` quote → request → live `/rides` socket; simulated dispatch |
+| + | Cross-cutting: Favourites, Notifications API, Reference data | ✅ done (TOUR-041) |
+
+**The entire frontend delivery order is complete** — all five verticals (M2–M6), the unified
+booking/reservation + payment foundation, and the three cross-cutting services (Favourites,
+Notifications REST + socket, Reference data) are built, tested, and verified live.
 
 ## Conventions (kept, per feedback §0)
 
