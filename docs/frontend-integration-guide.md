@@ -5,11 +5,12 @@ backend. It covers the request/response conventions, authentication, every REST 
 real-time WebSocket contracts, and the AI itinerary engine. Give this file to your model/agent as
 context.
 
-> Scope note: implemented today — **Tours & Booking**, **Emergency (M6)**, and **Food (M4,
-> restaurants + table reservations)** — plus auth, profiles, payments, reviews, uploads, real-time
-> notifications, and an AI itinerary planner. Bookings are **unified**: `GET /bookings/me` returns
-> tours and reservations in one feed (see §6 Bookings). Still **not** implemented: Hotels/Stays,
-> Flights, Transport, and the cross-cutting Favourites / Notifications-API / Reference-data services.
+> Scope note: implemented today — **Tours & Booking**, **Emergency (M6)**, **Food (M4)**, and
+> **Hotels/Stays (M3, paid reservations)** — plus auth, profiles, payments, reviews, uploads,
+> real-time notifications, and an AI itinerary planner. Bookings are **unified**: `GET /bookings/me`
+> returns tours and reservations in one feed (see §6 Bookings). Paid reservations (stays) settle
+> through the same `POST /payments/initiate` as tours. Still **not** implemented: Flights, Transport,
+> and the cross-cutting Favourites / Notifications-API / Reference-data services.
 
 ---
 
@@ -515,6 +516,34 @@ Notes:
   `POST /reservations/:reference/cancel`.
 - `menu` prices and reservation `total` are decimal GHS, per §5 Money.
 
+## 9d. Hotels / Stays (M3 — paid)
+
+Browsing is **public**; booking needs auth and is a **paid** reservation (unlike free tables).
+
+| Method | Path | Auth | Query / Body | `data` |
+|---|---|---|---|---|
+| GET | `/stays` | public | `q?, category?, minPrice?, maxPrice?, lat?, lng?, guests?, page?, limit?` | paginated **Stay** |
+| GET | `/stays/:slug` | public | — | **Stay** |
+| GET | `/stays/:id/rooms` | public | `guests?, checkIn?, checkOut?` | **Room[]** |
+| POST | `/stays/:id/book` | TOURIST | `{ roomId, checkIn (ISO), checkOut (ISO), guests }` | **Reservation** (`STAY`, `PENDING`) |
+
+```ts
+Stay = { id, slug, name, category: 'HOTEL'|'VILLA'|'HOSTEL'|'APARTMENT', location, lat, lng,
+         distanceKm?, stars, ratingAvg, ratingCount, fromPrice /* decimal GHS/night */, currency,
+         amenities: string[], images: string[], heroImageUrl?, description }
+Room = { id, name, maxGuests, bed, pricePerNight /* decimal GHS */, available }
+```
+
+**Booking is a two-step, paid flow:**
+1. `POST /stays/:id/book` creates a **`PENDING`** `STAY` reservation, priced **nights × room rate**
+   (returns reference `STY-2026-…`). `guests?` on search/rooms filters to stays/rooms that fit the party.
+2. Pay it with **`POST /payments/initiate { bookingReference: "STY-…" }`** — same endpoint as tours;
+   it returns a Paystack `authorizationUrl`. On success the reservation flips to `CONFIRMED` and
+   pushes `booking.status_changed` over the `/bookings` socket (see §7–§8). Cancel via
+   `POST /reservations/:reference/cancel` (a paid stay is refunded).
+
+The reservation shows in the unified `GET /bookings/me` with `itemType: 'STAY'`.
+
 ## 10. Known gaps & gotchas (read before building)
 
 1. **Avatar upload** *(resolved)* — `POST /uploads/image` now accepts the TOURIST role, so the
@@ -522,8 +551,8 @@ Notes:
    `avatarUrl`.
 2. **AI is synchronous and can be slow.** Reiterating §9: no streaming; budget for ~75s on the
    current free model and show a spinner. Ask the backend team to switch to a faster model for demos.
-3. **Not every vertical exists yet.** Tours, Emergency, and Food are live; **Hotels, Flights, and
-   Transport are not** — don't build UI expecting those endpoints.
+3. **Not every vertical exists yet.** Tours, Emergency, Food, and Hotels/Stays are live; **Flights
+   and Transport are not** — don't build UI expecting those endpoints.
 4. **Money is decimal GHS on the API.** Send/read `price`/`total`/`amount`/`budget` as decimal
    numbers (≤2 dp); more than 2 decimals is rejected with a 400. (Internally it's pesewas, but you
    never see that.)
@@ -551,3 +580,4 @@ Notes:
 | Facility type | `HOSPITAL`, `CLINIC`, `PHARMACY`, `POLICE`, `FIRE`, `EMBASSY` |
 | SOS kind | `MEDICAL`, `SECURITY`, `FIRE`, `OTHER` |
 | Restaurant dietary | `VEGETARIAN`, `VEGAN`, `HALAL`, `GLUTEN_FREE` |
+| Stay category | `HOTEL`, `VILLA`, `HOSTEL`, `APARTMENT` |

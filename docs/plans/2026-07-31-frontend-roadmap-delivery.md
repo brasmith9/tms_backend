@@ -29,9 +29,9 @@ tests → seed → live verify), committed independently.
 | 3 | Geo (`distanceKm`) + `q=` on `/tours` | ⚠️ `q=` done; haversine helper done; `/places/search` deferred (per-endpoint proximity used instead) |
 | 4 | **Emergency** | ✅ done (TOUR-027) — facilities (public, nearest-first), national numbers, idempotent SOS with contact notification + graceful degrade, emergency-contacts CRUD |
 | 5 | Food | ✅ done (TOUR-030) — restaurants, menus, availability, free table reservations |
-| 6 | Hotels | ⬜ next — first paid reservation; carries the payment generalisation |
-| 7 | Flights | ⬜ |
-| 8 | Transport | ⬜ |
+| 6 | Hotels | ✅ done (TOUR-034) — stays, rooms, paid STAY reservations; payments generalised in TOUR-033 |
+| 7 | Flights | ⬜ next — reuses the paid-reservation path; `search → offer(expiry) → book` shape |
+| 8 | Transport | ⬜ separate stateful `/rides` resource |
 | + | Cross-cutting: Favourites, Notifications API, Reference data | ⬜ |
 
 ## Conventions (kept, per feedback §0)
