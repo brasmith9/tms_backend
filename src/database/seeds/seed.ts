@@ -13,11 +13,14 @@ import {
 } from '../../modules/bookings/entities/tour-booking.entity';
 import { MedicalFacility } from '../../modules/emergency/entities/medical-facility.entity';
 import { Restaurant } from '../../modules/food/entities/restaurant.entity';
+import { Stay } from '../../modules/stays/entities/stay.entity';
+import { Room } from '../../modules/stays/entities/room.entity';
 import {
   SEED_PASSWORD,
   seedDestinations,
   seedFacilities,
   seedRestaurants,
+  seedStays,
   seedTours,
   seedUsers,
 } from './data';
@@ -190,6 +193,22 @@ async function seed(ds: DataSource): Promise<void> {
     }
     await restaurantRepo.save(restaurantRepo.create(r));
     console.log(`+ restaurant ${r.slug} (${r.cuisine})`);
+  }
+
+  // Stays + their rooms (idempotent by slug).
+  const stayRepo = ds.getRepository(Stay);
+  const roomRepo = ds.getRepository(Room);
+  for (const s of seedStays) {
+    if (await stayRepo.findOne({ where: { slug: s.slug } })) {
+      console.log(`= stay ${s.slug} already present`);
+      continue;
+    }
+    const { rooms, ...stayFields } = s;
+    const stay = await stayRepo.save(stayRepo.create(stayFields));
+    for (const room of rooms) {
+      await roomRepo.save(roomRepo.create({ ...room, stayId: stay.id }));
+    }
+    console.log(`+ stay ${s.slug} (+${rooms.length} rooms)`);
   }
 }
 
