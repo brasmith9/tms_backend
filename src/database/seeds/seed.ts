@@ -13,11 +13,15 @@ import {
 } from '../../modules/bookings/entities/tour-booking.entity';
 import { MedicalFacility } from '../../modules/emergency/entities/medical-facility.entity';
 import { Restaurant } from '../../modules/food/entities/restaurant.entity';
+import { Stay } from '../../modules/stays/entities/stay.entity';
+import { Room } from '../../modules/stays/entities/room.entity';
+import { Flight } from '../../modules/flights/entities/flight.entity';
 import {
   SEED_PASSWORD,
   seedDestinations,
   seedFacilities,
   seedRestaurants,
+  seedStays,
   seedTours,
   seedUsers,
 } from './data';
@@ -190,6 +194,105 @@ async function seed(ds: DataSource): Promise<void> {
     }
     await restaurantRepo.save(restaurantRepo.create(r));
     console.log(`+ restaurant ${r.slug} (${r.cuisine})`);
+  }
+
+  // Stays + their rooms (idempotent by slug).
+  const stayRepo = ds.getRepository(Stay);
+  const roomRepo = ds.getRepository(Room);
+  for (const s of seedStays) {
+    if (await stayRepo.findOne({ where: { slug: s.slug } })) {
+      console.log(`= stay ${s.slug} already present`);
+      continue;
+    }
+    const { rooms, ...stayFields } = s;
+    const stay = await stayRepo.save(stayRepo.create(stayFields));
+    for (const room of rooms) {
+      await roomRepo.save(roomRepo.create({ ...room, stayId: stay.id }));
+    }
+    console.log(`+ stay ${s.slug} (+${rooms.length} rooms)`);
+  }
+
+  // Flights — generated across the next few weeks, seeded only when empty
+  // (dates are relative to now, so re-seed a fresh DB to refresh availability).
+  const flightRepo = ds.getRepository(Flight);
+  if ((await flightRepo.count()) === 0) {
+    const routes = [
+      {
+        o: 'ACC',
+        d: 'LOS',
+        code: 'AW',
+        name: 'Africa World Airlines',
+        dur: 75,
+        price: 85000,
+      },
+      {
+        o: 'LOS',
+        d: 'ACC',
+        code: 'AW',
+        name: 'Africa World Airlines',
+        dur: 75,
+        price: 85000,
+      },
+      {
+        o: 'ACC',
+        d: 'ABJ',
+        code: 'KP',
+        name: 'ASKY Airlines',
+        dur: 90,
+        price: 120000,
+      },
+      {
+        o: 'ACC',
+        d: 'KMS',
+        code: 'AW',
+        name: 'Africa World Airlines',
+        dur: 50,
+        price: 45000,
+      },
+      {
+        o: 'ACC',
+        d: 'LHR',
+        code: 'BA',
+        name: 'British Airways',
+        dur: 380,
+        price: 950000,
+      },
+    ];
+    const flights: Flight[] = [];
+    for (const r of routes) {
+      for (let day = 3; day <= 17; day++) {
+        for (const hour of [8, 16]) {
+          const departsAt = new Date();
+          departsAt.setUTCDate(departsAt.getUTCDate() + day);
+          departsAt.setUTCHours(hour, 30, 0, 0);
+          const arrivesAt = new Date(departsAt.getTime() + r.dur * 60000);
+          flights.push(
+            flightRepo.create({
+              airlineCode: r.code,
+              airlineName: r.name,
+              origin: r.o,
+              destination: r.d,
+              departsAt,
+              arrivesAt,
+              flightNumber: `${r.code}${100 + day}${hour}`,
+              durationMinutes: r.dur,
+              stops: 0,
+              baggageKg: 20,
+              refundable: r.price < 900000,
+              amenities:
+                r.dur > 120 ? ['Meal Included', 'Baggage 20kg'] : ['Snack'],
+              priceMinor: r.price,
+              currency: 'GHS',
+              seatsAvailable: 9,
+            }),
+          );
+        }
+      }
+    }
+    await flightRepo.save(flights);
+    console.log(`+ ${flights.length} flights across ${routes.length} routes`);
+  } else {
+    console.log('= flights already present');
   }
 }
 
