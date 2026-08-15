@@ -24,6 +24,13 @@ export const seedUsers = [
     fullName: 'Kofi Mensah',
     role: UserRole.TOURIST,
   },
+  // CampusPal's primary persona — the account the integration guide documents
+  // as the test user, so the credentials in it work against a fresh seed.
+  {
+    email: 'student@ug.edu.gh',
+    fullName: 'Adwoa Mensimah',
+    role: UserRole.STUDENT,
+  },
 ];
 
 /**
