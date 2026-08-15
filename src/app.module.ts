@@ -3,6 +3,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { DestinationsModule } from './modules/destinations/destinations.module';
@@ -12,6 +13,7 @@ import { FlightsModule } from './modules/flights/flights.module';
 import { FoodModule } from './modules/food/food.module';
 import { ReferenceModule } from './modules/reference/reference.module';
 import { ItinerariesModule } from './modules/itineraries/itineraries.module';
+import { LocationsModule } from './modules/locations/locations.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -48,6 +50,8 @@ import { UsersModule } from './modules/users/users.module';
     RidesModule,
     FavoritesModule,
     ReferenceModule,
+    LocationsModule,
+    AssistantModule,
   ],
 })
 export class AppModule {}

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Destination } from '../destinations/entities/destination.entity';
 import { Restaurant } from '../food/entities/restaurant.entity';
+import { Location } from '../locations/entities/location.entity';
 import { Stay } from '../stays/entities/stay.entity';
 import { Tour } from '../tours/entities/tour.entity';
 import { Favorite } from './entities/favorite.entity';
@@ -10,7 +11,14 @@ import { FavoritesService } from './favorites.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Favorite, Tour, Stay, Restaurant, Destination]),
+    TypeOrmModule.forFeature([
+      Favorite,
+      Tour,
+      Stay,
+      Restaurant,
+      Destination,
+      Location,
+    ]),
   ],
   controllers: [FavoritesController],
   providers: [FavoritesService],

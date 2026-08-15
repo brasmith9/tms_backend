@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ReservationType } from '../reservations/entities/reservation.entity';
+import { LocationsRepository } from '../locations/locations.repository';
 import { ReservationsService } from '../reservations/reservations.service';
 import { Restaurant } from './entities/restaurant.entity';
 import { FoodRepository } from './food.repository';
@@ -22,30 +23,46 @@ const restaurant = (over: Partial<Restaurant> = {}): Restaurant =>
     menu: [],
     ratingAvg: 4.5,
     ratingCount: 10,
+    contactConsent: false,
     ...over,
   }) as Restaurant;
+
+const CONTACT = {
+  phone: '+233201234567',
+  whatsapp: '+233201234567',
+  email: 'orders@example.gh',
+};
 
 describe('FoodService', () => {
   let service: FoodService;
   let repo: Record<string, jest.Mock>;
   let reservations: { create: jest.Mock };
+  let locations: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     repo = {
       search: jest.fn(),
       findBySlug: jest.fn(),
       findById: jest.fn(),
+      existsBySlug: jest.fn().mockResolvedValue(false),
+      create: jest.fn((input: Partial<Restaurant>) => input as Restaurant),
+      save: jest.fn((r: Restaurant) => Promise.resolve(r)),
     };
     reservations = {
       create: jest.fn((i) =>
         Promise.resolve({ reference: 'TBL-2026-0001', ...i }),
       ),
     };
+    locations = {
+      findById: jest.fn().mockResolvedValue(null),
+      findByIds: jest.fn().mockResolvedValue([]),
+    };
     const module = await Test.createTestingModule({
       providers: [
         FoodService,
         { provide: FoodRepository, useValue: repo },
         { provide: ReservationsService, useValue: reservations },
+        { provide: LocationsRepository, useValue: locations },
       ],
     }).compile();
     service = module.get(FoodService);
@@ -91,5 +108,136 @@ describe('FoodService', () => {
         partySize: 2,
       }),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  describe('contact consent gate', () => {
+    it('publishes contact details when the vendor consented', async () => {
+      repo.findBySlug.mockResolvedValue(
+        restaurant({ contactConsent: true, ...CONTACT }),
+      );
+
+      const dto = await service.findBySlug('buka');
+
+      expect(dto.contactConsent).toBe(true);
+      expect(dto.phone).toBe(CONTACT.phone);
+      expect(dto.whatsapp).toBe(CONTACT.whatsapp);
+      expect(dto.email).toBe(CONTACT.email);
+    });
+
+    it('omits stored contact details when the vendor did not consent', async () => {
+      // The row carries contacts; consent is the only thing withholding them.
+      repo.findBySlug.mockResolvedValue(
+        restaurant({ contactConsent: false, ...CONTACT }),
+      );
+
+      const dto = await service.findBySlug('buka');
+
+      expect(dto.contactConsent).toBe(false);
+      expect(dto.phone).toBeUndefined();
+      expect(dto.whatsapp).toBeUndefined();
+      expect(dto.email).toBeUndefined();
+      expect(JSON.stringify(dto)).not.toContain(CONTACT.phone);
+    });
+
+    it('applies the gate on list results too', async () => {
+      repo.search.mockResolvedValue([
+        restaurant({ id: 'a', contactConsent: true, ...CONTACT }),
+        restaurant({ id: 'b', contactConsent: false, ...CONTACT }),
+      ]);
+
+      const page = await service.search({ page: 1, limit: 20 });
+
+      expect(page.results[0].phone).toBe(CONTACT.phone);
+      expect(page.results[1].phone).toBeUndefined();
+    });
+  });
+
+  describe('campus landmark', () => {
+    it('hydrates nearestLocation from the referenced location', async () => {
+      locations.findByIds.mockResolvedValue([
+        { id: 'loc1', slug: 'commonwealth-hall', name: 'Commonwealth Hall' },
+      ]);
+      repo.findBySlug.mockResolvedValue(
+        restaurant({ nearestLocationId: 'loc1' }),
+      );
+
+      const dto = await service.findBySlug('buka');
+
+      expect(dto.nearestLocation).toEqual({
+        id: 'loc1',
+        slug: 'commonwealth-hall',
+        name: 'Commonwealth Hall',
+      });
+    });
+
+    it('leaves nearestLocation undefined when the joint has no landmark', async () => {
+      repo.findBySlug.mockResolvedValue(restaurant());
+
+      const dto = await service.findBySlug('buka');
+
+      expect(dto.nearestLocation).toBeUndefined();
+      expect(locations.findByIds).toHaveBeenCalledWith([]);
+    });
+  });
+
+  describe('vendor write path', () => {
+    const createDto = {
+      name: 'Tyme Out',
+      cuisine: 'Ghanaian',
+      priceTier: 2,
+      description: 'x',
+      lat: 5.65,
+      lng: -0.187,
+      phone: CONTACT.phone,
+      contactConsent: true,
+    };
+
+    it('stamps the caller as owner and derives a slug from the name', async () => {
+      const created = await service.create('vendor-1', createDto);
+
+      expect(created.slug).toMatch(/^tyme-out-[0-9a-f]{6}$/);
+      expect(repo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ ownerId: 'vendor-1' }),
+      );
+    });
+
+    it('404s when the referenced campus location does not exist', async () => {
+      locations.findById.mockResolvedValue(null);
+
+      await expect(
+        service.create('vendor-1', {
+          ...createDto,
+          nearestLocationId: '11111111-1111-1111-1111-111111111111',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('converts menu prices from cedis to pesewas on replace', async () => {
+      repo.findById.mockResolvedValue(restaurant());
+
+      const menu = await service.replaceMenu('r1', {
+        sections: [
+          {
+            category: 'Mains',
+            items: [
+              { name: 'Jollof', price: 35.5, photoUrl: 'https://x.test/j.jpg' },
+            ],
+          },
+        ],
+      });
+
+      expect(menu[0].items[0].priceMinor).toBe(3550);
+      expect(menu[0].items[0].photoUrl).toBe('https://x.test/j.jpg');
+    });
+
+    it('resolves the owner for the ownership guard', async () => {
+      repo.findById.mockResolvedValue(restaurant({ ownerId: 'vendor-1' }));
+      await expect(service.ownerIdFor('r1')).resolves.toBe('vendor-1');
+    });
+
+    it('resolves a null owner for an editorially-seeded restaurant', async () => {
+      repo.findById.mockResolvedValue(restaurant());
+      await expect(service.ownerIdFor('r1')).resolves.toBeNull();
+    });
   });
 });

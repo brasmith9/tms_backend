@@ -5,6 +5,8 @@ export { seedTours, type SeedTour } from './tours';
 export { seedReviews, type SeedReview } from './reviews';
 export { seedStays } from './stays';
 export { seedRestaurants } from './restaurants';
+export { seedCampusLocations } from './campus-locations';
+export { seedCampusRestaurants } from './campus-food';
 export { seedFacilities } from './facilities';
 export { seedDrivers } from './drivers';
 export { seedFlightRoutes, type SeedFlightRoute } from './flights';

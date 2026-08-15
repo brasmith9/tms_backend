@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { Location } from '../locations/entities/location.entity';
 import {
   Paginated,
   applyPagination,
@@ -35,6 +36,8 @@ export class FavoritesService {
     private readonly restaurants: Repository<Restaurant>,
     @InjectRepository(Destination)
     private readonly destinations: Repository<Destination>,
+    @InjectRepository(Location)
+    private readonly locations: Repository<Location>,
   ) {}
 
   async add(userId: string, dto: CreateFavoriteDto): Promise<Favorite> {
@@ -104,6 +107,11 @@ export class FavoritesService {
         const d = await this.destinations.findOne({ where: { id: itemId } });
         if (!d) break;
         return { title: d.name, imageUrl: d.heroImageUrl };
+      }
+      case FavoriteType.LOCATION: {
+        const l = await this.locations.findOne({ where: { id: itemId } });
+        if (!l) break;
+        return { title: l.name, imageUrl: l.photos[0], slug: l.slug };
       }
     }
     throw new NotFoundException(`No ${type} with id ${itemId}`);

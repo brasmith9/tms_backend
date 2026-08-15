@@ -68,6 +68,26 @@ export const REFERENCE_SETS: Record<string, RefItem[]> = {
     { code: 'LHR', label: 'London — Heathrow' },
   ],
   'loyalty-tiers': pair('BRONZE', 'SILVER', 'GOLD', 'PLATINUM'),
+  // CampusPal: the category pills on /explore and the cuisine chips on /food.
+  'location-categories': pair(
+    'LECTURE_HALL',
+    'DEPARTMENT',
+    'PARK_FIELD',
+    'HOSTEL_HALL',
+    'ADMINISTRATION',
+    'OTHER',
+  ),
+  'food-categories': [
+    'Ghanaian',
+    'Grill',
+    'Cafe',
+    'Fast Food',
+    'Continental',
+    'Italian',
+    'Chinese',
+    'International',
+    'Vegetarian',
+  ].map((c) => ({ code: c.toUpperCase().replace(/\s+/g, '_'), label: c })),
 };
 
 export const REFERENCE_SET_NAMES = Object.keys(REFERENCE_SETS);

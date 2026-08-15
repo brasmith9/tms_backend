@@ -8,12 +8,11 @@ import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'crypto';
 import { AuthUser } from './auth-user.type';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterDto, roleForAffiliation } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { PasswordResetTokenRepository } from './password-reset-token.repository';
 import { UsersService } from '../users/users.service';
-import { UserRole } from '../users/entities/user.entity';
 import { MailService } from '../mail/mail.service';
 
 export type AuthTokens = { accessToken: string; refreshToken: string };
@@ -67,7 +66,7 @@ export class AuthService {
       email: dto.email,
       passwordHash: await argon2.hash(dto.password),
       fullName: dto.fullName,
-      role: UserRole.TOURIST,
+      role: roleForAffiliation(dto),
     });
     return this.issueTokens({
       id: user.id,

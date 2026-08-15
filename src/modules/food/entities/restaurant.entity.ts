@@ -13,9 +13,16 @@ export interface OpeningHour {
   closes: string; // "22:00"
 }
 
+export interface MenuItem {
+  name: string;
+  description?: string;
+  priceMinor: number;
+  photoUrl?: string;
+}
+
 export interface MenuSection {
   category: string;
-  items: { name: string; description?: string; priceMinor: number }[];
+  items: MenuItem[];
 }
 
 @Entity('restaurants')
@@ -34,6 +41,22 @@ export class Restaurant {
   @Column({ name: 'opening_hours', type: 'jsonb', default: () => "'[]'" })
   openingHours!: OpeningHour[];
   @Column({ type: 'jsonb', default: () => "'[]'" }) menu!: MenuSection[];
+  /**
+   * Contact details are published only when `contactConsent` is true — see the
+   * gate in RestaurantResponseDto.from(). Storage is unconditional; disclosure
+   * is not.
+   */
+  @Column({ nullable: true }) phone?: string;
+  @Column({ nullable: true }) whatsapp?: string;
+  @Column({ nullable: true }) email?: string;
+  @Column({ name: 'contact_consent', type: 'boolean', default: false })
+  contactConsent!: boolean;
+  /** The VENDOR who may manage this listing; null for editorially-seeded rows. */
+  @Index() @Column({ name: 'owner_id', nullable: true }) ownerId?: string;
+  /** Campus landmark this joint sits by — "near Commonwealth Hall". */
+  @Index()
+  @Column({ name: 'nearest_location_id', type: 'uuid', nullable: true })
+  nearestLocationId?: string | null;
   @Column({ name: 'rating_avg', type: 'double precision', default: 0 })
   ratingAvg!: number;
   @Column({ name: 'rating_count', type: 'int', default: 0 })

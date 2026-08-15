@@ -6,6 +6,13 @@ import {
   Restaurant,
 } from '../entities/restaurant.entity';
 
+/** The campus landmark a joint sits by, denormalised for rendering. */
+export class NearestLocationDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() slug!: string;
+  @ApiProperty() name!: string;
+}
+
 export class RestaurantResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() slug!: string;
@@ -25,10 +32,34 @@ export class RestaurantResponseDto {
   @ApiProperty({ type: 'array', items: { type: 'object' } })
   openingHours!: OpeningHour[];
 
+  @ApiPropertyOptional({ type: NearestLocationDto })
+  nearestLocation?: NearestLocationDto;
+
+  @ApiProperty({
+    description:
+      'Whether the vendor consented to publishing their contact details. ' +
+      'When false, phone/whatsapp/email are omitted entirely.',
+  })
+  contactConsent!: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Present only when contactConsent is true',
+  })
+  phone?: string;
+  @ApiPropertyOptional({
+    description: 'Present only when contactConsent is true',
+  })
+  whatsapp?: string;
+  @ApiPropertyOptional({
+    description: 'Present only when contactConsent is true',
+  })
+  email?: string;
+
   static from(
     r: Restaurant,
     isOpenNow: boolean,
     distanceKm?: number,
+    nearestLocation?: NearestLocationDto,
   ): RestaurantResponseDto {
     const dto = new RestaurantResponseDto();
     dto.id = r.id;
@@ -48,6 +79,16 @@ export class RestaurantResponseDto {
     dto.images = r.images;
     dto.description = r.description;
     dto.openingHours = r.openingHours;
+    dto.nearestLocation = nearestLocation;
+
+    // Consent gate: without an explicit opt-in the contact fields never leave
+    // the process, whatever is stored on the row.
+    dto.contactConsent = r.contactConsent;
+    if (r.contactConsent) {
+      dto.phone = r.phone;
+      dto.whatsapp = r.whatsapp;
+      dto.email = r.email;
+    }
     return dto;
   }
 }
@@ -57,7 +98,12 @@ export class MenuResponseDto {
   @ApiProperty({ type: 'array', items: { type: 'object' } })
   sections!: {
     category: string;
-    items: { name: string; description?: string; price: number }[];
+    items: {
+      name: string;
+      description?: string;
+      price: number;
+      photoUrl?: string;
+    }[];
   }[];
 
   static from(menu: MenuSection[]): MenuResponseDto {
@@ -68,6 +114,7 @@ export class MenuResponseDto {
         name: i.name,
         description: i.description,
         price: pesewasToCedis(i.priceMinor),
+        photoUrl: i.photoUrl,
       })),
     }));
     return dto;

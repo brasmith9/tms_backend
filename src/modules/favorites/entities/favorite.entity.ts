@@ -12,6 +12,8 @@ export enum FavoriteType {
   STAY = 'STAY',
   RESTAURANT = 'RESTAURANT',
   DESTINATION = 'DESTINATION',
+  /** A campus location — CampusPal's /saved screen. */
+  LOCATION = 'LOCATION',
 }
 
 export interface FavoriteSnapshot {

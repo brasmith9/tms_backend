@@ -15,6 +15,7 @@ import { Review } from '../../modules/reviews/entities/review.entity';
 import { MedicalFacility } from '../../modules/emergency/entities/medical-facility.entity';
 import { EmergencyContact } from '../../modules/emergency/entities/emergency-contact.entity';
 import { Restaurant } from '../../modules/food/entities/restaurant.entity';
+import { Location } from '../../modules/locations/entities/location.entity';
 import { Stay } from '../../modules/stays/entities/stay.entity';
 import { Room } from '../../modules/stays/entities/room.entity';
 import { Flight } from '../../modules/flights/entities/flight.entity';
@@ -32,6 +33,8 @@ import {
 import { Itinerary } from '../../modules/itineraries/entities/itinerary.entity';
 import {
   SEED_PASSWORD,
+  seedCampusLocations,
+  seedCampusRestaurants,
   seedDestinations,
   seedDrivers,
   seedEmergencyContacts,
@@ -331,6 +334,21 @@ async function seed(ds: DataSource): Promise<void> {
     console.log(`+ emergency contact ${c.name} (${c.relationship})`);
   }
 
+  // Campus locations — University of Ghana, Legon (idempotent by slug). Seeded
+  // before the campus food joints, which reference them by slug.
+  const locationRepo = ds.getRepository(Location);
+  const locationBySlug = new Map<string, Location>();
+  for (const l of seedCampusLocations) {
+    let location = await locationRepo.findOne({ where: { slug: l.slug } });
+    if (location) {
+      console.log(`= location ${l.slug} already present`);
+    } else {
+      location = await locationRepo.save(locationRepo.create(l));
+      console.log(`+ location ${l.slug} (${l.category})`);
+    }
+    locationBySlug.set(l.slug, location);
+  }
+
   // Restaurants (idempotent by slug).
   const restaurantRepo = ds.getRepository(Restaurant);
   const restaurantBySlug = new Map<string, Restaurant>();
@@ -343,6 +361,29 @@ async function seed(ds: DataSource): Promise<void> {
       console.log(`+ restaurant ${r.slug} (${r.cuisine})`);
     }
     restaurantBySlug.set(r.slug, restaurant);
+  }
+
+  // Campus food joints. These sit alongside the city venues above rather than
+  // replacing them. Every joint is owned by the demo vendor so the owner-scoped
+  // write routes have something to act on.
+  const vendor = usersByEmail.get('vendor1@voyago.test')!;
+  for (const r of seedCampusRestaurants) {
+    if (await restaurantRepo.findOne({ where: { slug: r.slug } })) {
+      console.log(`= campus joint ${r.slug} already present`);
+      continue;
+    }
+    const { nearestLocation, ...fields } = r;
+    const saved = await restaurantRepo.save(
+      restaurantRepo.create({
+        ...fields,
+        ownerId: vendor.id,
+        nearestLocationId: locationBySlug.get(nearestLocation)?.id ?? null,
+      }),
+    );
+    restaurantBySlug.set(r.slug, saved);
+    console.log(
+      `+ campus joint ${r.slug} (${r.cuisine}, near ${nearestLocation})`,
+    );
   }
 
   // Stays + their rooms (idempotent by slug).

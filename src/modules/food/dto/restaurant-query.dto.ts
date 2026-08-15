@@ -8,16 +8,36 @@ import {
   IsLongitude,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 export class RestaurantQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ description: 'Search name/cuisine/description' })
+  @ApiPropertyOptional({
+    description:
+      'Search name/cuisine/description, and the name of the campus landmark ' +
+      'the joint sits by',
+  })
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional({
+    description: 'Only joints attached to this campus location',
+  })
+  @IsOptional()
+  @IsUUID()
+  nearestLocationId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Only joints attached to the campus location with this slug',
+    example: 'commonwealth-hall',
+  })
+  @IsOptional()
+  @IsString()
+  nearestLocationSlug?: string;
 
   @ApiPropertyOptional() @IsOptional() @IsString() cuisine?: string;
 

@@ -15,6 +15,11 @@ export const seedUsers = [
     company: 'Ashanti Heritage Tours',
   },
   {
+    email: 'vendor1@voyago.test',
+    fullName: 'Akosua Boateng',
+    role: UserRole.VENDOR,
+  },
+  {
     email: 'kofi@voyago.test',
     fullName: 'Kofi Mensah',
     role: UserRole.TOURIST,
