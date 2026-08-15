@@ -25,7 +25,7 @@ describe('RestaurantReviewsService', () => {
     food = {
       byIdOrThrow: jest.fn().mockResolvedValue({ id: 'r1' }),
       applyRating: jest.fn().mockResolvedValue(undefined),
-      setRating: jest.fn().mockResolvedValue(undefined),
+      withdrawRating: jest.fn().mockResolvedValue(undefined),
     };
     users = {
       findById: jest
@@ -97,28 +97,20 @@ describe('RestaurantReviewsService', () => {
     beforeEach(() => {
       repo.findById = jest
         .fn()
-        .mockResolvedValue({ id: 'rev1', restaurantId: 'r1' });
+        .mockResolvedValue({ id: 'rev1', restaurantId: 'r1', rating: 2 });
       repo.remove = jest.fn().mockResolvedValue(undefined);
-      repo.ratingSummary = jest.fn().mockResolvedValue({ count: 2, avg: 4.5 });
     });
 
-    it('removes the review and recomputes the aggregate from what remains', async () => {
+    it('removes the review and backs its rating out of the average', async () => {
       await service.remove('r1', 'rev1');
 
       expect(repo.remove).toHaveBeenCalledWith(
-        { id: 'rev1', restaurantId: 'r1' },
+        { id: 'rev1', restaurantId: 'r1', rating: 2 },
         manager,
       );
-      // Recomputed, not decremented — a running average cannot be reversed.
-      expect(food.setRating).toHaveBeenCalledWith('r1', 2, 4.5, manager);
-    });
-
-    it('zeroes the aggregate when the last review goes', async () => {
-      repo.ratingSummary.mockResolvedValue({ count: 0, avg: 0 });
-
-      await service.remove('r1', 'rev1');
-
-      expect(food.setRating).toHaveBeenCalledWith('r1', 0, 0, manager);
+      // Reversed, not recounted: a restaurant's ratingCount can exceed the
+      // number of stored review rows, and recounting would erase that history.
+      expect(food.withdrawRating).toHaveBeenCalledWith('r1', 2, manager);
     });
 
     it('404s a review that belongs to a different restaurant', async () => {

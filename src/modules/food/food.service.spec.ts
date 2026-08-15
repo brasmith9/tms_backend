@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ReservationType } from '../reservations/entities/reservation.entity';
+import type { EntityManager } from 'typeorm';
 import { LocationsRepository } from '../locations/locations.repository';
 import { ReservationsService } from '../reservations/reservations.service';
 import { Restaurant } from './entities/restaurant.entity';
@@ -177,6 +178,77 @@ describe('FoodService', () => {
 
       expect(dto.nearestLocation).toBeUndefined();
       expect(locations.findByIds).toHaveBeenCalledWith([]);
+    });
+  });
+
+  describe('rating aggregate', () => {
+    const managerFor = (r: Restaurant) => {
+      const saved: Restaurant[] = [];
+      return {
+        manager: {
+          getRepository: () => ({
+            findOneOrFail: () => Promise.resolve(r),
+            save: (x: Restaurant) => {
+              saved.push(x);
+              return Promise.resolve(x);
+            },
+          }),
+        } as unknown as EntityManager,
+        saved,
+      };
+    };
+
+    it('rounds the running average to 2dp rather than leaking a long float', async () => {
+      // 4.5 over 214 ratings plus one 5 gives 4.502325581395349 raw.
+      const r = restaurant({ ratingAvg: 4.5, ratingCount: 214 });
+      const { manager } = managerFor(r);
+
+      await service.applyRating('r1', 5, manager);
+
+      expect(r.ratingCount).toBe(215);
+      expect(r.ratingAvg).toBe(4.5);
+      expect(String(r.ratingAvg)).not.toMatch(/\d{6}/);
+    });
+
+    it('backs a withdrawn rating out without erasing unrowed history', async () => {
+      // The seeded 214 ratings have no review row behind them; moderating the
+      // one real review must not reset the joint to zero.
+      const r = restaurant({ ratingAvg: 4.5, ratingCount: 215 });
+      const { manager } = managerFor(r);
+
+      await service.withdrawRating('r1', 5, manager);
+
+      expect(r.ratingCount).toBe(214);
+      expect(r.ratingAvg).toBe(4.5);
+    });
+
+    it('zeroes cleanly when the last rating is withdrawn', async () => {
+      const r = restaurant({ ratingAvg: 5, ratingCount: 1 });
+      const { manager } = managerFor(r);
+
+      await service.withdrawRating('r1', 5, manager);
+
+      expect(r).toMatchObject({ ratingCount: 0, ratingAvg: 0 });
+    });
+
+    it('never drives the count below zero', async () => {
+      const r = restaurant({ ratingAvg: 0, ratingCount: 0 });
+      const { manager } = managerFor(r);
+
+      await service.withdrawRating('r1', 4, manager);
+
+      expect(r).toMatchObject({ ratingCount: 0, ratingAvg: 0 });
+    });
+
+    it('round-trips: applying then withdrawing restores the original', async () => {
+      const r = restaurant({ ratingAvg: 4.32, ratingCount: 97 });
+      const { manager } = managerFor(r);
+
+      await service.applyRating('r1', 2, manager);
+      await service.withdrawRating('r1', 2, manager);
+
+      expect(r.ratingCount).toBe(97);
+      expect(r.ratingAvg).toBeCloseTo(4.32, 2);
     });
   });
 

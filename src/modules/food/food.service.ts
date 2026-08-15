@@ -187,22 +187,34 @@ export class FoodService {
     const repo = manager.getRepository(Restaurant);
     const r = await repo.findOneOrFail({ where: { id: restaurantId } });
     const newCount = r.ratingCount + 1;
-    r.ratingAvg = (r.ratingAvg * r.ratingCount + rating) / newCount;
+    // Rounded to 2dp: the raw quotient is a long float and this value goes
+    // straight out on the API as a star rating.
+    r.ratingAvg = round2((r.ratingAvg * r.ratingCount + rating) / newCount);
     r.ratingCount = newCount;
     await repo.save(r);
   }
 
-  /** Sets the aggregate outright, for when a review is removed and it is recomputed. */
-  async setRating(
+  /**
+   * Backs one rating out of the running average, for a moderated review.
+   *
+   * Deliberately reverses the arithmetic rather than recounting the review
+   * rows: a restaurant's `ratingCount` can legitimately exceed the number of
+   * stored reviews (seeded and imported ratings have no row behind them), so
+   * recomputing from rows would erase that history on the first moderation.
+   */
+  async withdrawRating(
     restaurantId: string,
-    count: number,
-    avg: number,
+    rating: number,
     manager: EntityManager,
   ): Promise<void> {
     const repo = manager.getRepository(Restaurant);
     const r = await repo.findOneOrFail({ where: { id: restaurantId } });
-    r.ratingCount = count;
-    r.ratingAvg = avg;
+    const newCount = Math.max(r.ratingCount - 1, 0);
+    r.ratingAvg =
+      newCount === 0
+        ? 0
+        : round2((r.ratingAvg * r.ratingCount - rating) / newCount);
+    r.ratingCount = newCount;
     await repo.save(r);
   }
 
@@ -283,6 +295,9 @@ export class FoodService {
     throw new ConflictException('Could not allocate a unique slug');
   }
 }
+
+/** Star ratings are rendered to one or two decimals; store them that way. */
+const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 const toLandmark = (l: Location): NearestLocationDto => ({
   id: l.id,

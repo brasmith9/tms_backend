@@ -50,20 +50,4 @@ export class RestaurantReviewsRepository {
   ): Promise<void> {
     await manager.getRepository(RestaurantReview).remove(review);
   }
-
-  /** Recomputes the aggregate from the rows that actually remain. */
-  async ratingSummary(
-    restaurantId: string,
-    manager: EntityManager,
-  ): Promise<{ count: number; avg: number }> {
-    const rows = await manager
-      .getRepository(RestaurantReview)
-      .find({ where: { restaurantId }, select: { rating: true } });
-    if (rows.length === 0) return { count: 0, avg: 0 };
-    const sum = rows.reduce((acc, r) => acc + r.rating, 0);
-    return {
-      count: rows.length,
-      avg: Math.round((sum / rows.length) * 100) / 100,
-    };
-  }
 }

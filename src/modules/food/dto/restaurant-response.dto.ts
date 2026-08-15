@@ -85,9 +85,12 @@ export class RestaurantResponseDto {
     // the process, whatever is stored on the row.
     dto.contactConsent = r.contactConsent;
     if (r.contactConsent) {
-      dto.phone = r.phone;
-      dto.whatsapp = r.whatsapp;
-      dto.email = r.email;
+      // `?? undefined` so an unset column is omitted rather than serialized as
+      // null — these are declared optional, and `"email": null` reads like a
+      // published-but-empty address.
+      dto.phone = r.phone ?? undefined;
+      dto.whatsapp = r.whatsapp ?? undefined;
+      dto.email = r.email ?? undefined;
     }
     return dto;
   }

@@ -4,6 +4,10 @@ export interface CandidateLocation {
   slug: string;
   name: string;
   category: string;
+  /** Sent so the model can populate SHOW_DIRECTIONS instead of refusing for
+   *  want of coordinates. The server overwrites them on the way out anyway. */
+  lat: number;
+  lng: number;
   buildingNotes?: string;
 }
 
@@ -14,6 +18,8 @@ export interface CandidateFoodJoint {
   name: string;
   cuisine: string;
   priceTier: number;
+  lat: number;
+  lng: number;
   /**
    * Channels the vendor consented to publish. Empty means the model must not
    * offer to contact them. The numbers themselves are never sent to the model —

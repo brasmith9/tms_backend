@@ -74,13 +74,7 @@ export class RestaurantReviewsService {
 
     await this.dataSource.transaction(async (manager) => {
       await this.repo.remove(review, manager);
-      // Recomputed rather than subtracted: a running average cannot be reversed
-      // without drift, and moderation is rare enough that a re-read is cheap.
-      const { count, avg } = await this.repo.ratingSummary(
-        restaurantId,
-        manager,
-      );
-      await this.food.setRating(restaurantId, count, avg, manager);
+      await this.food.withdrawRating(restaurantId, review.rating, manager);
     });
   }
 }

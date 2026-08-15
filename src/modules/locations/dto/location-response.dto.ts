@@ -22,11 +22,13 @@ export class LocationResponseDto {
     dto.slug = l.slug;
     dto.name = l.name;
     dto.category = l.category;
-    dto.description = l.description;
+    // `?? undefined` so unset columns are omitted rather than serialized as
+    // null, matching the optional fields declared above.
+    dto.description = l.description ?? undefined;
     dto.lat = l.lat;
     dto.lng = l.lng;
     dto.photos = l.photos;
-    dto.buildingNotes = l.buildingNotes;
+    dto.buildingNotes = l.buildingNotes ?? undefined;
     dto.distanceKm =
       distanceKm === undefined ? undefined : Math.round(distanceKm * 100) / 100;
     return dto;

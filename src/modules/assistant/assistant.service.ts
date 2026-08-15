@@ -298,6 +298,8 @@ const toCandidateLocation = (l: Location): CandidateLocation => ({
   slug: l.slug,
   name: l.name,
   category: l.category,
+  lat: l.lat,
+  lng: l.lng,
   buildingNotes: l.buildingNotes,
 });
 
@@ -307,6 +309,8 @@ const toCandidateFoodJoint = (r: Restaurant): CandidateFoodJoint => ({
   name: r.name,
   cuisine: r.cuisine,
   priceTier: r.priceTier,
+  lat: r.lat,
+  lng: r.lng,
   // The consent gate reaches the prompt too: without consent the model is told
   // no channel exists, so it cannot offer to call. The number itself never goes.
   contact: r.contactConsent
